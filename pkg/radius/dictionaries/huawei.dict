@@ -1,0 +1,27 @@
+# Huawei VSA dictionary subset — radstorm (vendor-id 2011)
+#
+# Purpose: Maps the Huawei vendor-specific attributes radstorm cares
+# about (see docs/PROTOCOL.md) to human-readable names. Sourced from
+# FreeRADIUS' dictionary.huawei. This is a curated subset — full Huawei
+# dictionary is not needed for radstorm's CoA/Disconnect handling.
+#
+# Related: pkg/radius/dictionary.go, pkg/radius/vendor.go, docs/PROTOCOL.md
+# Briefing: .orchestration/briefings/1a-radius-protocol.md
+# Contract: Vendor-Type IDs are fixed by Huawei; names should follow the
+# Huawei- prefix convention.
+#
+# Format: VENDOR <name> <id>
+#         VENDOR-ATTRIBUTE <vendor-name> <attr-name> <vendor-type> <type>
+
+VENDOR Huawei 2011
+
+VENDOR-ATTRIBUTE Huawei Huawei-Input-Peak-Rate         1   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Input-Average-Rate      2   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Input-Basic-Rate        3   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Output-Peak-Rate        5   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Output-Average-Rate     6   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Output-Basic-Rate       7   integer
+VENDOR-ATTRIBUTE Huawei Huawei-Subscriber-QoS-Profile  18  string
+VENDOR-ATTRIBUTE Huawei Huawei-Connect-Id              20  integer
+VENDOR-ATTRIBUTE Huawei Huawei-Acct-Session-Id         26  string
+VENDOR-ATTRIBUTE Huawei Huawei-Service-Type            65  integer
