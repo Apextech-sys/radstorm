@@ -1,0 +1,29 @@
+# Minimum legal config — every defaultable field omitted so ApplyDefaults
+# is exercised. Required fields only.
+
+[target]
+auth_address  = "127.0.0.1:1812"
+acct_address  = "127.0.0.1:1813"
+shared_secret = "s3cret"
+
+[coa_listener]
+bind_address  = "0.0.0.0:3799"
+shared_secret = "s3cret"
+
+[subscribers]
+count            = 2
+credentials_file = "testdata/credentials/minimal.csv"
+
+[source]
+ips = ["127.0.0.1"]
+# port_range intentionally omitted to test default
+
+[nas]
+ip_address = "10.0.0.1"
+identifier = "radstorm-min"
+
+[scenario]
+type = "uniform"
+
+[scenario.uniform]
+duration_sec = 10.0

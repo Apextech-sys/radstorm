@@ -1,0 +1,29 @@
+# subscribers.auth_method_pap_pct = 150 — must fail validation.
+
+[target]
+auth_address  = "127.0.0.1:1812"
+acct_address  = "127.0.0.1:1813"
+shared_secret = "s"
+
+[coa_listener]
+bind_address  = "0.0.0.0:3799"
+shared_secret = "s"
+
+[subscribers]
+count               = 1
+credentials_file    = "testdata/credentials/minimal.csv"
+auth_method_pap_pct = 150
+
+[source]
+ips = ["127.0.0.1"]
+port_range = [10000, 60000]
+
+[nas]
+ip_address = "10.0.0.1"
+identifier = "n"
+
+[scenario]
+type = "uniform"
+
+[scenario.uniform]
+duration_sec = 1.0
