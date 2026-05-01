@@ -1,0 +1,43 @@
+# Build artifacts
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+*.prof
+
+# Go
+/vendor/
+go.work
+go.work.sum
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+.env*.local
+
+# Test artifacts
+/test-results/
+/results/
+/.cache/
+
+# Worktrees (created by orchestrator)
+/.claude/worktrees/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Local secrets
+.env
+secrets/
+
+# Allow commits of orchestration logs (we want history)
+!.orchestration/agent-log/*.jsonl
