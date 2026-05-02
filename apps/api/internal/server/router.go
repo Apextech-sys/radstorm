@@ -14,7 +14,7 @@
 //   - apps/api/internal/server/middleware/middleware.go
 //   - .orchestration/contracts/rest-api.md
 //
-// Briefing: .orchestration/briefings/1f-api-skeleton.md
+// Briefing: .orchestration/briefings/3b-api-full.md
 //
 // Contract: routes here MUST match openapi.yaml; both MUST match
 // rest-api.md.
@@ -32,17 +32,21 @@ import (
 	mw "github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/middleware"
 )
 
-// NewRouter wires up the full API surface. The store is injected so tests
-// can supply a fresh in-memory store per test.
-func NewRouter(logger *slog.Logger, store runs.Store) http.Handler {
+// RouterDeps holds dependencies required to build the production router.
+type RouterDeps struct {
+	Logger  *slog.Logger
+	Store   runs.Store
+	Runner  *runs.Runner
+	DataDir string
+}
+
+// NewRouter wires up the full API surface from the supplied deps.
+func NewRouter(deps RouterDeps) http.Handler {
 	r := chi.NewRouter()
 
-	// Middleware ordering: request-id first so logger and recover both have
-	// access to it; recover wraps everything else; logging is innermost so
-	// it sees the final response status from the handler.
 	r.Use(mw.RequestIDMiddleware)
-	r.Use(mw.RecoverMiddleware(logger))
-	r.Use(mw.LoggingMiddleware(logger))
+	r.Use(mw.RecoverMiddleware(deps.Logger))
+	r.Use(mw.LoggingMiddleware(deps.Logger))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -52,9 +56,9 @@ func NewRouter(logger *slog.Logger, store runs.Store) http.Handler {
 		MaxAge:           300,
 	}))
 
-	runsHandler := handlers.NewRunsHandler(store)
-	eventsHandler := handlers.NewEventsHandler(store)
-	resultsHandler := handlers.NewResultsHandler(store)
+	runsHandler := handlers.NewRunsHandler(deps.Store, deps.Runner)
+	eventsHandler := handlers.NewEventsHandler(deps.Store, deps.DataDir)
+	resultsHandler := handlers.NewResultsHandler(deps.Store, deps.DataDir)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", handlers.Health)

@@ -37,7 +37,7 @@ func quietLogger() *slog.Logger {
 }
 
 func TestNewRouter_HealthEndpoint(t *testing.T) {
-	router := NewRouter(quietLogger(), runs.NewMemoryStore())
+	router := NewRouter(RouterDeps{Logger: quietLogger(), Store: runs.NewMemoryStore()})
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 
@@ -52,7 +52,7 @@ func TestNewRouter_HealthEndpoint(t *testing.T) {
 }
 
 func TestNewRouter_CORSPreflight(t *testing.T) {
-	router := NewRouter(quietLogger(), runs.NewMemoryStore())
+	router := NewRouter(RouterDeps{Logger: quietLogger(), Store: runs.NewMemoryStore()})
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 
@@ -72,7 +72,7 @@ func TestServer_GracefulShutdown(t *testing.T) {
 	addr := ln.Addr().String()
 	require.NoError(t, ln.Close())
 
-	router := NewRouter(quietLogger(), runs.NewMemoryStore())
+	router := NewRouter(RouterDeps{Logger: quietLogger(), Store: runs.NewMemoryStore()})
 	srv := New(addr, router, quietLogger())
 
 	ctx, cancel := context.WithCancel(context.Background())
