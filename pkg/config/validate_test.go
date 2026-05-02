@@ -1,9 +1,10 @@
 // Package config — tests for the custom validators.
 //
 // Purpose:
-//   Direct unit tests for hostport and file validators, independent of
-//   TOML decoding, so their behaviour is pinned regardless of how
-//   they're surfaced through Validate.
+//
+//	Direct unit tests for hostport and file validators, independent of
+//	TOML decoding, so their behaviour is pinned regardless of how
+//	they're surfaced through Validate.
 //
 // Briefing: .orchestration/briefings/1b-config.md
 //

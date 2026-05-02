@@ -699,7 +699,7 @@ func (b listenerCollectorBridge) Submit(e events.Event) { b.c.Submit(e) }
 // subscriberCollectorBridge adapts CollectorAPI down to subscriber.Collector.
 type subscriberCollectorBridge struct{ c CollectorAPI }
 
-func (b subscriberCollectorBridge) Submit(e events.Event)              { b.c.Submit(e) }
+func (b subscriberCollectorBridge) Submit(e events.Event)                    { b.c.Submit(e) }
 func (b subscriberCollectorBridge) SubmitOutcome(o events.SubscriberOutcome) { b.c.SubmitOutcome(o) }
 
 // collectorBridgeFor adapts CollectorAPI to io.Collector (Submit-only).

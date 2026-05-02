@@ -25,8 +25,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 )
 
 // RunsHandler bundles dependencies for the runs endpoints.

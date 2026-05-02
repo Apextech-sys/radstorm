@@ -1,9 +1,10 @@
 // Package config — tests for Load, LoadConfigOnly, and ApplyDefaults.
 //
 // Purpose:
-//   Exercises the disk-side workflow: TOML decode, defaults application,
-//   and the wiring through to the credentials loader. Uses the fixtures
-//   under pkg/config/testdata/.
+//
+//	Exercises the disk-side workflow: TOML decode, defaults application,
+//	and the wiring through to the credentials loader. Uses the fixtures
+//	under pkg/config/testdata/.
 //
 // Related files:
 //   - pkg/config/load.go (the system under test)

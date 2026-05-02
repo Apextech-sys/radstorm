@@ -1,10 +1,11 @@
 // Package events — per-subscriber outcome record (one per subscriber, end-of-run).
 //
 // Purpose:
-//   At the end of a test the harness writes one SubscriberOutcome per
-//   simulated subscriber summarising its journey. This is the canonical
-//   long-form per-subscriber record consumed by the analyze-results CLI
-//   and the per-subscriber drill-down view in the frontend.
+//
+//	At the end of a test the harness writes one SubscriberOutcome per
+//	simulated subscriber summarising its journey. This is the canonical
+//	long-form per-subscriber record consumed by the analyze-results CLI
+//	and the per-subscriber drill-down view in the frontend.
 //
 // Related files:
 //   - pkg/events/event.go (per-occurrence Event records)

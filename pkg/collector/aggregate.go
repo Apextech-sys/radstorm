@@ -1,10 +1,11 @@
 // Package collector — end-of-test aggregation into a Summary document.
 //
 // Purpose:
-//   Walks the per-shard counters and the SubscriberOutcome list captured
-//   by the collector and builds the Summary struct that marshals to
-//   summary.json. Includes percentile math (min/p50/p95/p99/p999/max),
-//   the establishment-over-time curve, and threshold evaluation.
+//
+//	Walks the per-shard counters and the SubscriberOutcome list captured
+//	by the collector and builds the Summary struct that marshals to
+//	summary.json. Includes percentile math (min/p50/p95/p99/p999/max),
+//	the establishment-over-time curve, and threshold evaluation.
 //
 // Related files:
 //   - pkg/collector/collector.go (owns the shard counters this consumes)
@@ -208,16 +209,16 @@ func (c *Collector) Aggregate(opts AggregateOpts) (*Summary, error) {
 
 	// Merge per-shard counters.
 	var (
-		totalEvents      int64
-		totalRetransmits int64
-		coaRX, coaACK, coaNAK, coaDROP             int64
-		discRX, discACK, discNAK                   int64
-		coaLatUs, discLatUs                        []int64
-		writeErrs                                  []string
-		totalActivated, totalEstablished           int64
-		earliestActivated, latestActivated         int64
-		earliestEstablished, latestEstablished     int64
-		activatedSeen, establishedSeen             bool
+		totalEvents                            int64
+		totalRetransmits                       int64
+		coaRX, coaACK, coaNAK, coaDROP         int64
+		discRX, discACK, discNAK               int64
+		coaLatUs, discLatUs                    []int64
+		writeErrs                              []string
+		totalActivated, totalEstablished       int64
+		earliestActivated, latestActivated     int64
+		earliestEstablished, latestEstablished int64
+		activatedSeen, establishedSeen         bool
 	)
 
 	merged := make(map[uint32]*subAgg)
@@ -519,11 +520,12 @@ func computeRetransmitDistribution(samples []int64) RetransmitDistribution {
 // to-explain results that match what people reading dashboards expect.
 //
 // Examples for sorted [1..1000]:
-//   p50  → ceil(500)   → idx 499 → 500
-//   p95  → ceil(950)   → idx 949 → 950
-//   p99  → ceil(990)   → idx 989 → 990
-//   p999 → ceil(999)   → idx 998 → 999
-//   p100 → ceil(1000)  → idx 999 → 1000 (== max)
+//
+//	p50  → ceil(500)   → idx 499 → 500
+//	p95  → ceil(950)   → idx 949 → 950
+//	p99  → ceil(990)   → idx 989 → 990
+//	p999 → ceil(999)   → idx 998 → 999
+//	p100 → ceil(1000)  → idx 999 → 1000 (== max)
 func percentile(sorted []int64, q float64) int64 {
 	if len(sorted) == 0 {
 		return 0

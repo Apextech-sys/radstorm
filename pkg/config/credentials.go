@@ -1,10 +1,11 @@
 // Package config — CSV-backed credentials loader.
 //
 // Purpose:
-//   Parses the credentials file referenced by Subscribers.CredentialsFile.
-//   Required header columns are username and password; auth_method,
-//   sub_type, nas_port_id and mac_address are optional and default to
-//   empty strings when their column is absent or the cell is blank.
+//
+//	Parses the credentials file referenced by Subscribers.CredentialsFile.
+//	Required header columns are username and password; auth_method,
+//	sub_type, nas_port_id and mac_address are optional and default to
+//	empty strings when their column is absent or the cell is blank.
 //
 // Related files:
 //   - pkg/config/load.go (calls LoadCredentials from the public Load entry point)
@@ -13,10 +14,11 @@
 // Briefing: .orchestration/briefings/1b-config.md
 //
 // Contract:
-//   Public type Credential and function LoadCredentials. The Credential
-//   struct shape is consumed by pkg/scenario when building the subscriber
-//   pool — adding fields here without touching that contract is fine,
-//   but renames must coordinate.
+//
+//	Public type Credential and function LoadCredentials. The Credential
+//	struct shape is consumed by pkg/scenario when building the subscriber
+//	pool — adding fields here without touching that contract is fine,
+//	but renames must coordinate.
 package config
 
 import (

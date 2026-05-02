@@ -1,9 +1,10 @@
 // Package config — tests for the credentials CSV loader.
 //
 // Purpose:
-//   Pin LoadCredentials behaviour: required vs. optional columns, blank
-//   row tolerance, validation of enum-style optional cells, and a 1k-row
-//   bulk-load smoke test.
+//
+//	Pin LoadCredentials behaviour: required vs. optional columns, blank
+//	row tolerance, validation of enum-style optional cells, and a 1k-row
+//	bulk-load smoke test.
 //
 // Briefing: .orchestration/briefings/1b-config.md
 //

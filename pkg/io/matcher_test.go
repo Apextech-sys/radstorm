@@ -1,9 +1,10 @@
 // Package io — ReplyMatcher tests.
 //
 // Purpose:
-//   Verifies the matcher: register/deliver round-trip, duplicate
-//   detection, bad-authenticator rejection, unmatched delivery, and
-//   cancellation.
+//
+//	Verifies the matcher: register/deliver round-trip, duplicate
+//	detection, bad-authenticator rejection, unmatched delivery, and
+//	cancellation.
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io

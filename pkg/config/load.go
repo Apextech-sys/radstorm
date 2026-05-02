@@ -1,9 +1,10 @@
 // Package config — TOML loading, defaults, and the public Load entry points.
 //
 // Purpose:
-//   Owns the disk-side workflow: read a TOML file, decode it into Config,
-//   apply documented defaults, validate, and (for the convenience entry
-//   point) load the referenced credentials CSV.
+//
+//	Owns the disk-side workflow: read a TOML file, decode it into Config,
+//	apply documented defaults, validate, and (for the convenience entry
+//	point) load the referenced credentials CSV.
 //
 // Related files:
 //   - pkg/config/config.go (struct definitions decoded into)
@@ -14,8 +15,9 @@
 // Briefing: .orchestration/briefings/1b-config.md
 //
 // Contract:
-//   Public functions Load, LoadConfigOnly, ApplyDefaults form the entire
-//   stable surface of pkg/config used by the rest of the system.
+//
+//	Public functions Load, LoadConfigOnly, ApplyDefaults form the entire
+//	stable surface of pkg/config used by the rest of the system.
 package config
 
 import (

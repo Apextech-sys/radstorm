@@ -39,9 +39,9 @@ import (
 
 func main() {
 	var (
-		_       = flag.String("config", "", "path to config.toml")
-		outDir  = flag.String("out", "", "output directory")
-		sub     = flag.String("subcommand", "", "ignored, present so flag parser doesn't choke on positional")
+		_      = flag.String("config", "", "path to config.toml")
+		outDir = flag.String("out", "", "output directory")
+		sub    = flag.String("subcommand", "", "ignored, present so flag parser doesn't choke on positional")
 	)
 	_ = sub
 	// The first positional arg is "run-scenario"; just skip it.

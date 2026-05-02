@@ -1,9 +1,10 @@
 // Package io — RetransmitPolicy timeoutFor tests.
 //
 // Purpose:
-//   Exercises BackoffConstant / BackoffLinear / BackoffExponential curves
-//   and the InitialTimeout-vs-backoff handoff so callers can rely on the
-//   per-attempt timeouts they think they configured.
+//
+//	Exercises BackoffConstant / BackoffLinear / BackoffExponential curves
+//	and the InitialTimeout-vs-backoff handoff so callers can rely on the
+//	per-attempt timeouts they think they configured.
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io

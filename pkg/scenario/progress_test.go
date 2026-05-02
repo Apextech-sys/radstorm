@@ -1,5 +1,8 @@
 // Package scenario — progress writer tests.
 //
+// Purpose: Tests for the JSONL progress writer that streams live counters
+// during a scenario run to progress.jsonl on disk.
+//
 // Briefing: .orchestration/briefings/3a-scenario-cli.md
 package scenario
 

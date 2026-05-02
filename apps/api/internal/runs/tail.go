@@ -63,10 +63,10 @@ func TailLines(ctx context.Context, path string, opts TailOptions) <-chan []byte
 	go func() {
 		defer close(out)
 		var (
-			f         *os.File
-			reader    *bufio.Reader
-			lastSize  int64
-			lineBuf   bytes.Buffer
+			f        *os.File
+			reader   *bufio.Reader
+			lastSize int64
+			lineBuf  bytes.Buffer
 		)
 		closeFile := func() {
 			if f != nil {

@@ -1,11 +1,12 @@
 // Package collector — sharded event collector with periodic Parquet flush.
 //
 // Purpose:
-//   Receives Event records from every component of the harness on a set
-//   of buffered channels (one per CPU core, hash by SubscriberID), writes
-//   them to per-shard Parquet files via a background goroutine per shard,
-//   and aggregates an end-of-test Summary per the frozen results-schema.md
-//   contract.
+//
+//	Receives Event records from every component of the harness on a set
+//	of buffered channels (one per CPU core, hash by SubscriberID), writes
+//	them to per-shard Parquet files via a background goroutine per shard,
+//	and aggregates an end-of-test Summary per the frozen results-schema.md
+//	contract.
 //
 // Related files:
 //   - pkg/collector/parquet.go (per-shard Parquet writer)

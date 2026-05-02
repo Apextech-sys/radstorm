@@ -1,11 +1,12 @@
 // Package config — typed configuration structs for radstorm scenarios.
 //
 // Purpose:
-//   Defines the canonical Go struct representation of a radstorm scenario
-//   config, mirroring the frozen contract at
-//   .orchestration/contracts/config-schema.md. All fields use struct tags
-//   for TOML decoding (BurntSushi/toml), JSON unmarshalling (used by the
-//   API server's POST /runs body), and validation (go-playground/validator/v10).
+//
+//	Defines the canonical Go struct representation of a radstorm scenario
+//	config, mirroring the frozen contract at
+//	.orchestration/contracts/config-schema.md. All fields use struct tags
+//	for TOML decoding (BurntSushi/toml), JSON unmarshalling (used by the
+//	API server's POST /runs body), and validation (go-playground/validator/v10).
 //
 // Related files:
 //   - pkg/config/load.go (decodes TOML into these structs and applies defaults)

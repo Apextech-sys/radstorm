@@ -1,13 +1,15 @@
 # GitHub Actions CI workflow for radstorm.
 #
 # Purpose:
-#   Runs on every push and pull_request to main. Three jobs:
-#     1. lint-and-test-go   — Go unit tests + golangci-lint
-#     2. lint-and-test-web  — Next.js typecheck + lint + Vitest unit tests
-#     3. e2e                — Full E2E suite against Docker FreeRADIUS (push to main only)
+#   Runs on every push and pull_request to main. Four jobs:
+#     1. headers             — File-header convention check (fast gate)
+#     2. lint-and-test-go   — Go unit tests + golangci-lint
+#     3. lint-and-test-web  — Next.js typecheck + lint + Vitest unit tests
+#     4. e2e                — Full E2E suite against Docker FreeRADIUS (push to main only)
 #   Module/dependency caches are shared across jobs.
 #
 # Related:
+#   - scripts/check-headers.sh (header lint gate)
 #   - test/e2e/run.sh (e2e job entry point)
 #   - test/docker/docker-compose.yml (FreeRADIUS rig used by e2e)
 #   - Makefile (build + test targets)
@@ -35,11 +37,26 @@ env:
   GOLANGCI_LINT_VERSION: "v2.1"
 
 jobs:
+  # ── Job 0: File-header convention check ─────────────────────────────────────
+  # Fast gate — runs on every PR and push. No language toolchain required.
+  headers:
+    name: File-header lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check file headers
+        run: bash scripts/check-headers.sh
+
   # ── Job 1: Go lint + unit tests ─────────────────────────────────────────────
   lint-and-test-go:
     name: Go lint & tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [headers]
 
     steps:
       - name: Checkout
@@ -78,6 +95,7 @@ jobs:
     name: Frontend lint & tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [headers]
 
     steps:
       - name: Checkout
@@ -119,7 +137,7 @@ jobs:
     timeout-minutes: 30
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    needs: [lint-and-test-go, lint-and-test-web]
+    needs: [headers, lint-and-test-go, lint-and-test-web]
 
     steps:
       - name: Checkout

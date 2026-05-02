@@ -31,28 +31,28 @@ type AttributeType uint8
 
 // Standard attribute types radstorm emits or parses. List per docs/PROTOCOL.md.
 const (
-	AttrUserName            AttributeType = 1
-	AttrUserPassword        AttributeType = 2
-	AttrCHAPPassword        AttributeType = 3
-	AttrNASIPAddress        AttributeType = 4
-	AttrNASPort             AttributeType = 5
-	AttrServiceType         AttributeType = 6
-	AttrFramedProtocol      AttributeType = 7
-	AttrFramedIPAddress     AttributeType = 8
-	AttrReplyMessage        AttributeType = 18
-	AttrCalledStationID     AttributeType = 30
-	AttrCallingStationID    AttributeType = 31
-	AttrNASIdentifier       AttributeType = 32
-	AttrAcctStatusType      AttributeType = 40
-	AttrAcctSessionID       AttributeType = 44
-	AttrAcctAuthentic       AttributeType = 45
-	AttrAcctSessionTime     AttributeType = 46
-	AttrCHAPChallenge       AttributeType = 60
-	AttrNASPortType         AttributeType = 61
-	AttrVendorSpecific      AttributeType = 26
-	AttrNASPortID           AttributeType = 87
+	AttrUserName             AttributeType = 1
+	AttrUserPassword         AttributeType = 2
+	AttrCHAPPassword         AttributeType = 3
+	AttrNASIPAddress         AttributeType = 4
+	AttrNASPort              AttributeType = 5
+	AttrServiceType          AttributeType = 6
+	AttrFramedProtocol       AttributeType = 7
+	AttrFramedIPAddress      AttributeType = 8
+	AttrReplyMessage         AttributeType = 18
+	AttrCalledStationID      AttributeType = 30
+	AttrCallingStationID     AttributeType = 31
+	AttrNASIdentifier        AttributeType = 32
+	AttrAcctStatusType       AttributeType = 40
+	AttrAcctSessionID        AttributeType = 44
+	AttrAcctAuthentic        AttributeType = 45
+	AttrAcctSessionTime      AttributeType = 46
+	AttrCHAPChallenge        AttributeType = 60
+	AttrNASPortType          AttributeType = 61
+	AttrVendorSpecific       AttributeType = 26
+	AttrNASPortID            AttributeType = 87
 	AttrMessageAuthenticator AttributeType = 80
-	AttrErrorCause          AttributeType = 101
+	AttrErrorCause           AttributeType = 101
 )
 
 // Common Service-Type values (RFC 2865 §5.6).
@@ -64,7 +64,7 @@ const (
 
 // Common Framed-Protocol values (RFC 2865 §5.7).
 const (
-	FramedProtocolPPP uint32 = 1
+	FramedProtocolPPP  uint32 = 1
 	FramedProtocolSLIP uint32 = 2
 )
 
@@ -77,11 +77,11 @@ const (
 
 // Acct-Status-Type values (RFC 2866 §5.1).
 const (
-	AcctStatusStart           uint32 = 1
-	AcctStatusStop            uint32 = 2
-	AcctStatusInterimUpdate   uint32 = 3
-	AcctStatusAccountingOn    uint32 = 7
-	AcctStatusAccountingOff   uint32 = 8
+	AcctStatusStart         uint32 = 1
+	AcctStatusStop          uint32 = 2
+	AcctStatusInterimUpdate uint32 = 3
+	AcctStatusAccountingOn  uint32 = 7
+	AcctStatusAccountingOff uint32 = 8
 )
 
 // AcctAuthentic values (RFC 2866 §5.6).
@@ -93,12 +93,12 @@ const (
 
 // Error-Cause values (RFC 5176 §3.5) used when NAKing.
 const (
-	ErrorCauseUnsupportedAttribute    uint32 = 401
-	ErrorCauseMissingAttribute        uint32 = 402
+	ErrorCauseUnsupportedAttribute      uint32 = 401
+	ErrorCauseMissingAttribute          uint32 = 402
 	ErrorCauseNASIdentificationMismatch uint32 = 403
-	ErrorCauseInvalidRequest          uint32 = 404
-	ErrorCauseSessionContextNotFound  uint32 = 503
-	ErrorCauseResourcesUnavailable    uint32 = 506
+	ErrorCauseInvalidRequest            uint32 = 404
+	ErrorCauseSessionContextNotFound    uint32 = 503
+	ErrorCauseResourcesUnavailable      uint32 = 506
 )
 
 // Attribute is a single RADIUS attribute (Type-Length-Value triple on the wire).

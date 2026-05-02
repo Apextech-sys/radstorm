@@ -26,7 +26,7 @@ import (
 // fakeEngine is an EngineAPI that always returns Access-Accept (and
 // Accounting-Response when the FSM gets that far).
 type fakeEngine struct {
-	mu       sync.Mutex
+	mu        sync.Mutex
 	sendCalls int
 }
 

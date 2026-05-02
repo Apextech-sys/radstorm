@@ -1,9 +1,10 @@
 // Package collector — unit tests for percentile math and aggregator.
 //
 // Purpose:
-//   Pin the percentile contract (briefing requires p50≈500, p99≈990,
-//   p999≈999 for input [1..1000]) and exercise the threshold-rollup +
-//   curve-builder helpers in isolation, away from the IO machinery.
+//
+//	Pin the percentile contract (briefing requires p50≈500, p99≈990,
+//	p999≈999 for input [1..1000]) and exercise the threshold-rollup +
+//	curve-builder helpers in isolation, away from the IO machinery.
 //
 // Related files:
 //   - pkg/collector/aggregate.go (subject under test)

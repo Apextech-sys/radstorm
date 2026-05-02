@@ -2,10 +2,11 @@
 // and Parquet file validity.
 //
 // Purpose:
-//   Black-box tests for the sharded collector. Verifies zero loss under
-//   concurrent submission, end-of-test aggregation correctness, and that
-//   the produced Parquet files are readable with the canonical reader
-//   for the schema.
+//
+//	Black-box tests for the sharded collector. Verifies zero loss under
+//	concurrent submission, end-of-test aggregation correctness, and that
+//	the produced Parquet files are readable with the canonical reader
+//	for the schema.
 //
 // Related files:
 //   - pkg/collector/collector.go (subject under test)

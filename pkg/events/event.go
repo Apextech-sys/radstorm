@@ -1,11 +1,12 @@
 // Package events — Event struct and helper constructors.
 //
 // Purpose:
-//   Defines the canonical Event record produced by every component of the
-//   harness (subscriber FSM, I/O sender/receiver, CoA/Disconnect listener)
-//   and consumed by the sharded collector. The struct field names + types +
-//   parquet column names are the wire/disk schema; downstream readers
-//   (analyze-results CLI, frontend dashboard) depend on this shape.
+//
+//	Defines the canonical Event record produced by every component of the
+//	harness (subscriber FSM, I/O sender/receiver, CoA/Disconnect listener)
+//	and consumed by the sharded collector. The struct field names + types +
+//	parquet column names are the wire/disk schema; downstream readers
+//	(analyze-results CLI, frontend dashboard) depend on this shape.
 //
 // Related files:
 //   - pkg/events/category.go (Category and EventType label constants)

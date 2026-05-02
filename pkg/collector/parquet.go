@@ -1,10 +1,11 @@
 // Package collector — Parquet writer wrapper used by each collector shard.
 //
 // Purpose:
-//   Wraps github.com/parquet-go/parquet-go's GenericWriter so each shard
-//   can lazily open files, append batches of events, rotate when a file
-//   exceeds the configured size cap, and flush on shutdown. One writer
-//   instance per shard; not safe for concurrent use within a shard.
+//
+//	Wraps github.com/parquet-go/parquet-go's GenericWriter so each shard
+//	can lazily open files, append batches of events, rotate when a file
+//	exceeds the configured size cap, and flush on shutdown. One writer
+//	instance per shard; not safe for concurrent use within a shard.
 //
 // Related files:
 //   - pkg/collector/collector.go (owns one parquetWriter per shard)
