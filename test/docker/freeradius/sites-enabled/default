@@ -1,0 +1,78 @@
+# FreeRADIUS virtual server — default site for the radstorm test rig
+#
+# Purpose:
+#   Minimal site configuration that accepts all Access-Requests and Accounting-Requests
+#   from the seeded test users (sub00000001..sub00005000) and immediately returns
+#   Access-Accept / Accounting-Response.  No complex policy; this is a stress-test
+#   target, not a production server.
+#
+# Related: test/docker/freeradius/clients.conf, test/docker/freeradius/users
+# Briefing: .orchestration/briefings/1e-docker-rig.md
+# Contract: All known users (Cleartext-Password) get Access-Accept.
+#           All Accounting-Requests get Accounting-Response (accepted).
+
+server default {
+
+    # ── Listen for authentication (UDP 1812) ─────────────────────────────────
+    listen {
+        type        = auth
+        ipaddr      = *
+        port        = 1812
+    }
+
+    # ── Listen for accounting (UDP 1813) ─────────────────────────────────────
+    listen {
+        type        = acct
+        ipaddr      = *
+        port        = 1813
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Authorization — look the user up in the flat "users" file
+    # ─────────────────────────────────────────────────────────────────────────
+    authorize {
+        preprocess
+        files       # reads /etc/freeradius/users
+        pap         # sets Auth-Type = PAP if User-Password present
+        chap        # sets Auth-Type = CHAP if CHAP-Password present
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Authentication — verify the password supplied in the Access-Request
+    # ─────────────────────────────────────────────────────────────────────────
+    authenticate {
+        Auth-Type PAP {
+            pap
+        }
+        Auth-Type CHAP {
+            chap
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Pre-accounting — accept all accounting requests
+    # ─────────────────────────────────────────────────────────────────────────
+    preacct {
+        preprocess
+        acct_unique
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Accounting — just accept; we don't store anything
+    # ─────────────────────────────────────────────────────────────────────────
+    accounting {
+        ok
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Session / post-auth — nothing special
+    # ─────────────────────────────────────────────────────────────────────────
+    session {
+    }
+
+    post-auth {
+        Post-Auth-Type REJECT {
+            attr_filter.access_reject
+        }
+    }
+}

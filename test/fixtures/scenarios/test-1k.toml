@@ -1,0 +1,65 @@
+# Scenario fixture: test-1k — 1000-subscriber integration test against Docker FreeRADIUS
+#
+# Purpose:
+#   Standard local integration scenario: 1000 subscribers through the full
+#   auth + accounting flow against the Docker FreeRADIUS rig.  Used for
+#   Wave 3 / Wave 4 acceptance testing and day-to-day dev verification.
+#   Expect ~30-60 seconds to complete on a developer laptop.
+#
+# Related: test/fixtures/credentials/test-1k.csv,
+#          test/docker/docker-compose.yml (host ports 11812/11813),
+#          .orchestration/contracts/config-schema.md (schema reference)
+# Briefing: .orchestration/briefings/1e-docker-rig.md
+# Contract: Target host:port must match docker-compose.yml mapped ports.
+#           Shared secret must match clients.conf (testing123).
+
+# ── Target RADIUS server (Docker FreeRADIUS via mapped host ports) ────────────
+[target]
+auth_address  = "127.0.0.1:11812"
+acct_address  = "127.0.0.1:11813"
+shared_secret = "testing123"
+
+# ── CoA listener ─────────────────────────────────────────────────────────────
+[coa_listener]
+bind_address  = "0.0.0.0:13799"
+shared_secret = "testing123"
+
+# ── Subscribers ───────────────────────────────────────────────────────────────
+[subscribers]
+count              = 1000
+credentials_file   = "test/fixtures/credentials/test-1k.csv"
+auth_method_pap_pct = 50   # 50% PAP, 50% CHAP (matches alternating CSV)
+type_pppoe_pct     = 100
+include_acct_start = true
+
+# ── Source IPs / ports ────────────────────────────────────────────────────────
+[source]
+ips        = ["127.0.0.1"]
+port_range = [20000, 40000]
+
+# ── NAS identification ────────────────────────────────────────────────────────
+[nas]
+ip_address = "127.0.0.1"
+identifier = "radstorm-test1k"
+
+# ── Retransmit policy ─────────────────────────────────────────────────────────
+[retransmit]
+initial_timeout_ms = 5000
+max_retries        = 3
+backoff            = "exponential"
+backoff_base_ms    = 1000
+
+# ── Scenario type: cold_start — Gaussian arrival curve ────────────────────────
+[scenario]
+type             = "cold_start"
+hard_timeout_sec = 120
+
+[scenario.cold_start]
+mu_sec         = 20.0    # mean activation time 20s after start
+sigma_sec      = 5.0     # std dev 5s
+truncate_sigma = 3.0     # clip at ±3σ (5s to 35s)
+
+# ── Output ────────────────────────────────────────────────────────────────────
+[output]
+directory          = "results/test-1k"
+flush_interval_sec = 10
