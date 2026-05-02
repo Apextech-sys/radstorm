@@ -117,7 +117,17 @@ func TestZeroLossUnderConcurrency(t *testing.T) {
 		want            = producers * eventsPerWorker // 100_000
 	)
 	dir := t.TempDir()
-	c, err := New(Opts{Dir: dir, ShardCount: 4, PerShardBuffer: 16384, FlushInterval: 50 * time.Millisecond, BatchSize: 1024})
+	// Per-shard buffer must absorb a tight-loop burst from 4 producers
+	// hashing across 4 shards. Worst case all four producers hash to the
+	// same shard for a window — size for the full workload to be safe.
+	// With drop-on-full Submit, undersized buffers shed events.
+	c, err := New(Opts{
+		Dir:            dir,
+		ShardCount:     4,
+		PerShardBuffer: want,
+		FlushInterval:  50 * time.Millisecond,
+		BatchSize:      1024,
+	})
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
@@ -136,7 +146,8 @@ func TestZeroLossUnderConcurrency(t *testing.T) {
 	require.NoError(t, c.Stop(context.Background()))
 	got := countParquetRows(t, dir)
 	assert.Equal(t, int64(want), got, "every submitted event must be persisted")
-	assert.Equal(t, int64(0), c.Dropped(), "no events must have been dropped")
+	assert.Equal(t, int64(0), c.Dropped(), "no events must have been dropped after Stop")
+	assert.Equal(t, int64(0), c.EventsDroppedFull(), "no events must have been dropped due to back-pressure with sized buffers")
 }
 
 func TestSubmitAfterStopIsCounted(t *testing.T) {
