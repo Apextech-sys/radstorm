@@ -2,32 +2,29 @@
  * Run detail page — live progress and results for a single test run.
  *
  * Purpose:
- *   Shows real-time progress (via SSE) during an active run, and the full
- *   results dashboard (establishment curve, latency histogram, subscriber
- *   stats, threshold evaluation) once complete.
- *   In Wave 1 this is a skeleton with layout shell. Full implementation
- *   in Wave 3.
+ *   Server component wrapper that extracts the run ID from route params and
+ *   renders the RunDetailClient component. RunDetailClient handles all
+ *   data fetching, SSE streaming, and progressive enhancement from
+ *   live progress → results dashboard when the run finishes.
  *
  * Related files:
- *   - src/lib/api.ts (getRun, getRunResults, subscribeRunEvents)
+ *   - src/app/runs/[id]/run-detail-client.tsx (interactive client component)
+ *   - src/lib/api.ts (getRun, cancelRun, getRunResults, subscribeRunEvents)
  *   - src/lib/types/api.ts (Run, RunProgress)
  *   - src/lib/types/results.ts (RunSummary)
  *   - src/components/layout/page-container.tsx
  *
- * Briefing: .orchestration/briefings/1d-frontend-scaffold.md
+ * Briefing: .orchestration/briefings/2d-frontend-pages.md
  *
  * Contract: internal
  */
 
 import type { Metadata } from "next";
-import {
-  PageContainer,
-  PageHeader,
-  WaveComingPlaceholder,
-} from "@/components/layout/page-container";
+import { PageContainer } from "@/components/layout/page-container";
+import { RunDetailClient } from "@/app/runs/[id]/run-detail-client";
 
 export const metadata: Metadata = {
-  title: "Run Detail",
+  title: "Run Detail — radstorm",
 };
 
 interface RunDetailPageProps {
@@ -39,11 +36,7 @@ export default async function RunDetailPage({ params }: RunDetailPageProps) {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Run Detail"
-        description={`Run ${id}`}
-      />
-      <WaveComingPlaceholder wave={3} />
+      <RunDetailClient runId={id} />
     </PageContainer>
   );
 }

@@ -1,28 +1,30 @@
 /**
- * Runs list page — all historical test runs.
+ * Runs list page — all historical and active test runs.
  *
  * Purpose:
- *   Lists all past and active test runs with status, timestamps, and summary
- *   metrics. In Wave 1 this is a skeleton with the layout shell and a
- *   "Coming in Wave 2" placeholder. Real run list arrives in Wave 2/3.
+ *   Sortable table of all runs with status badges, relative timestamps,
+ *   duration, and subscriber establishment stats. Polls every 5 seconds
+ *   for updates. Includes a polished empty state with CTA to create a run.
  *
  * Related files:
+ *   - src/components/runs/runs-table.tsx (the data table component)
  *   - src/lib/api.ts (listRuns)
  *   - src/lib/types/api.ts (Run type)
  *   - src/components/layout/page-container.tsx
  *
- * Briefing: .orchestration/briefings/1d-frontend-scaffold.md
+ * Briefing: .orchestration/briefings/2d-frontend-pages.md
  *
  * Contract: internal
  */
 
 import type { Metadata } from "next";
-import { PageContainer, PageHeader, WaveComingPlaceholder } from "@/components/layout/page-container";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { LinkButton } from "@/components/ui/link-button";
 import { Plus } from "lucide-react";
+import { RunsTable } from "@/components/runs/runs-table";
 
 export const metadata: Metadata = {
-  title: "Runs",
+  title: "Runs — radstorm",
 };
 
 export default function RunsPage() {
@@ -38,7 +40,7 @@ export default function RunsPage() {
           </LinkButton>
         }
       />
-      <WaveComingPlaceholder wave={2} />
+      <RunsTable />
     </PageContainer>
   );
 }

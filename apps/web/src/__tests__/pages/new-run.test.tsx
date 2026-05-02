@@ -2,14 +2,15 @@
  * Smoke tests for the New Run page.
  *
  * Purpose:
- *   Asserts that the New Run page renders without throwing and shows
- *   the heading and Wave 2 coming placeholder.
+ *   Asserts that the New Run page renders without throwing, shows
+ *   the heading, and renders the scenario form (Start Run button).
  *
  * Related files:
  *   - src/app/runs/new/page.tsx (component under test)
- *   - src/components/layout/page-container.tsx
+ *   - src/components/runs/scenario-form.tsx (form child)
+ *   - src/lib/api.ts (mocked)
  *
- * Briefing: .orchestration/briefings/1d-frontend-scaffold.md
+ * Briefing: .orchestration/briefings/2d-frontend-pages.md
  *
  * Contract: internal
  */
@@ -40,6 +41,19 @@ vi.mock("next-themes", () => ({
   ),
 }));
 
+// Mock API calls made by the form on mount
+vi.mock("@/lib/api", () => ({
+  getScenarioTemplates: vi.fn().mockResolvedValue([]),
+  createRun: vi.fn(),
+  ApiError: class ApiError extends Error {
+    status: number;
+    constructor(status: number, msg: string) {
+      super(msg);
+      this.status = status;
+    }
+  },
+}));
+
 describe("New Run page", () => {
   it("renders without crashing", () => {
     render(<NewRunPage />);
@@ -50,8 +64,10 @@ describe("New Run page", () => {
     expect(screen.getByText("New Run")).toBeInTheDocument();
   });
 
-  it("shows the Wave 2 placeholder", () => {
+  it("shows the Start Run button", () => {
     render(<NewRunPage />);
-    expect(screen.getByText(/Wave 2/i)).toBeInTheDocument();
+    // There are two "Start Run" buttons: header and footer submit
+    const btns = screen.getAllByText(/Start Run/i);
+    expect(btns.length).toBeGreaterThanOrEqual(1);
   });
 });

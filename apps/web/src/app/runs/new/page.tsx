@@ -2,40 +2,37 @@
  * New Run page — scenario configuration form.
  *
  * Purpose:
- *   Provides the UI for configuring a new test scenario: target RADIUS server,
- *   subscriber count, scenario type, ramp parameters, NAS config, etc.
- *   In Wave 1 this is a skeleton showing the layout shell. The full form
- *   with validation and API submission arrives in Wave 2/3.
+ *   Two-column layout: left column shows a description + template picker
+ *   sidebar; right column holds the full editable config form. Submitting
+ *   the form triggers POST /api/v1/runs and navigates to /runs/{id}.
  *
  * Related files:
- *   - src/lib/types/config.ts (Config zod schema for form validation)
+ *   - src/components/runs/scenario-form.tsx (the full form component)
+ *   - src/lib/types/config.ts (configSchema for form validation)
  *   - src/lib/api.ts (createRun)
  *   - src/components/layout/page-container.tsx
  *
- * Briefing: .orchestration/briefings/1d-frontend-scaffold.md
+ * Briefing: .orchestration/briefings/2d-frontend-pages.md
  *
  * Contract: internal
  */
 
 import type { Metadata } from "next";
-import {
-  PageContainer,
-  PageHeader,
-  WaveComingPlaceholder,
-} from "@/components/layout/page-container";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
+import { ScenarioForm } from "@/components/runs/scenario-form";
 
 export const metadata: Metadata = {
-  title: "New Run",
+  title: "New Run — radstorm",
 };
 
 export default function NewRunPage() {
   return (
-    <PageContainer>
+    <PageContainer constrained={false} className="max-w-4xl mx-auto">
       <PageHeader
         title="New Run"
         description="Configure a scenario and trigger a stress test against a RADIUS server"
       />
-      <WaveComingPlaceholder wave={2} />
+      <ScenarioForm />
     </PageContainer>
   );
 }
