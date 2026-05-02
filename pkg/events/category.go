@@ -1,9 +1,10 @@
 // Package events — shared event types emitted by the test harness components.
 //
 // Purpose:
-//   Defines the canonical Category constants used to classify events emitted
-//   by the subscriber FSM, the I/O layer, and the server (CoA/Disconnect)
-//   listener. Constants exist so producers and the collector agree on labels.
+//
+//	Defines the canonical Category constants used to classify events emitted
+//	by the subscriber FSM, the I/O layer, and the server (CoA/Disconnect)
+//	listener. Constants exist so producers and the collector agree on labels.
 //
 // Related files:
 //   - pkg/events/event.go (Event struct that uses these constants)
@@ -55,9 +56,9 @@ const (
 	EventTypeRequestRetransmitted = "request_retransmitted"
 
 	// packet_inbound
-	EventTypeReplyReceived   = "reply_received"
-	EventTypeDuplicateReply  = "duplicate_reply"
-	EventTypeUnmatchedReply  = "unmatched_reply"
+	EventTypeReplyReceived  = "reply_received"
+	EventTypeDuplicateReply = "duplicate_reply"
+	EventTypeUnmatchedReply = "unmatched_reply"
 
 	// coa_inbound
 	EventTypeCoAReceived = "coa_received"

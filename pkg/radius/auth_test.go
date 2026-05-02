@@ -31,10 +31,10 @@ func TestEncryptDecryptUserPasswordRoundTrip(t *testing.T) {
 		0x44, 0x33, 0xee, 0x88, 0x07, 0x77, 0x12, 0x34}
 
 	cases := []string{
-		"",                           // empty → still pads to 16
-		"hi",                         // shorter than 16
-		"sixteen-byte-pwd",           // exactly 16
-		"this is a longer password!", // > 16
+		"",                                     // empty → still pads to 16
+		"hi",                                   // shorter than 16
+		"sixteen-byte-pwd",                     // exactly 16
+		"this is a longer password!",           // > 16
 		"abcdefghijklmnopqrstuvwxyz0123456789", // > 32
 	}
 	for _, pw := range cases {

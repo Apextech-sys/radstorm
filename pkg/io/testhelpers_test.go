@@ -1,16 +1,17 @@
 // Package io — in-process UDP echo / black-hole helpers for tests.
 //
 // Purpose:
-//   Spins up a tiny UDP server bound to a kernel-chosen port that
-//   decodes inbound Access-Request packets and replies with an
-//   Access-Accept whose Response Authenticator is computed against the
-//   request's RequestAuthenticator + the shared secret. Modes let tests
-//   exercise: normal echo, black-hole (never reply), delayed reply
-//   (sleep N before replying), reply-twice (test duplicate detection),
-//   bad-authenticator (test validation rejection).
 //
-//   This avoids needing the Docker FreeRADIUS rig for unit tests while
-//   keeping the wire-level test loop honest.
+//	Spins up a tiny UDP server bound to a kernel-chosen port that
+//	decodes inbound Access-Request packets and replies with an
+//	Access-Accept whose Response Authenticator is computed against the
+//	request's RequestAuthenticator + the shared secret. Modes let tests
+//	exercise: normal echo, black-hole (never reply), delayed reply
+//	(sleep N before replying), reply-twice (test duplicate detection),
+//	bad-authenticator (test validation rejection).
+//
+//	This avoids needing the Docker FreeRADIUS rig for unit tests while
+//	keeping the wire-level test loop honest.
 //
 // Related files:
 //   - pkg/io/sender_test.go (consumer)

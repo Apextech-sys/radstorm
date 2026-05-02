@@ -1,10 +1,11 @@
 // Package io — Receiver / ServerHandler tests.
 //
 // Purpose:
-//   Verifies that inbound CoA-Request and Disconnect-Request datagrams
-//   reach the registered ServerHandler, that absent-handler drops emit
-//   the expected event, and that decode errors emit a validation_failed
-//   event.
+//
+//	Verifies that inbound CoA-Request and Disconnect-Request datagrams
+//	reach the registered ServerHandler, that absent-handler drops emit
+//	the expected event, and that decode errors emit a validation_failed
+//	event.
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io

@@ -44,25 +44,25 @@ const (
 
 // Progress mirrors the `progress` block in GET /runs/{id}.
 type Progress struct {
-	ElapsedMs               int64 `json:"elapsed_ms"`
-	SubscribersTotal        int   `json:"subscribers_total"`
-	SubscribersActivated    int   `json:"subscribers_activated"`
-	SubscribersEstablished  int   `json:"subscribers_established"`
-	SubscribersFailed       int   `json:"subscribers_failed"`
+	ElapsedMs              int64 `json:"elapsed_ms"`
+	SubscribersTotal       int   `json:"subscribers_total"`
+	SubscribersActivated   int   `json:"subscribers_activated"`
+	SubscribersEstablished int   `json:"subscribers_established"`
+	SubscribersFailed      int   `json:"subscribers_failed"`
 }
 
 // Run is the in-memory representation of a run; it serialises directly to the
 // JSON shape documented in rest-api.md.
 type Run struct {
-	ID         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Status     Status                 `json:"status"`
-	CreatedAt  time.Time              `json:"created_at"`
-	StartedAt  *time.Time             `json:"started_at,omitempty"`
-	FinishedAt *time.Time             `json:"finished_at,omitempty"`
-	Config     *config.Config         `json:"config"`
-	Progress   Progress               `json:"progress"`
-	Summary    map[string]any         `json:"summary,omitempty"`
+	ID         string         `json:"id"`
+	Name       string         `json:"name"`
+	Status     Status         `json:"status"`
+	CreatedAt  time.Time      `json:"created_at"`
+	StartedAt  *time.Time     `json:"started_at,omitempty"`
+	FinishedAt *time.Time     `json:"finished_at,omitempty"`
+	Config     *config.Config `json:"config"`
+	Progress   Progress       `json:"progress"`
+	Summary    map[string]any `json:"summary,omitempty"`
 }
 
 // ErrNotFound is returned when a run id does not exist in the store.

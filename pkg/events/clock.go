@@ -1,10 +1,11 @@
 // Package events — monotonic clock helper for event timestamps.
 //
 // Purpose:
-//   The Event struct carries a monotonic-nanosecond field used for latency
-//   math (subtracting two MonotonicNs values is wall-clock-jump-safe). Go's
-//   stdlib hides the raw monotonic reading, so we anchor at process start
-//   and report deltas from that anchor.
+//
+//	The Event struct carries a monotonic-nanosecond field used for latency
+//	math (subtracting two MonotonicNs values is wall-clock-jump-safe). Go's
+//	stdlib hides the raw monotonic reading, so we anchor at process start
+//	and report deltas from that anchor.
 //
 // Related files:
 //   - pkg/events/event.go (constructors call monotonicNow)

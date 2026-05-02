@@ -1,9 +1,10 @@
 // Package config — validation orchestration and custom validators.
 //
 // Purpose:
-//   Wraps go-playground/validator/v10 with two custom validators required
-//   by the config schema: `hostport` (host:port string with non-empty host
-//   and port in 1..65535) and `file` (path exists and is a regular file).
+//
+//	Wraps go-playground/validator/v10 with two custom validators required
+//	by the config schema: `hostport` (host:port string with non-empty host
+//	and port in 1..65535) and `file` (path exists and is a regular file).
 //
 // Related files:
 //   - pkg/config/config.go (struct tags reference these validators)

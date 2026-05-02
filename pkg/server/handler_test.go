@@ -3,6 +3,9 @@
 // extraction). These exercise edge cases that the end-to-end UDP tests
 // in listener_test.go don't easily reach.
 //
+// Purpose: Tests for VSA tag keying, attribute value rendering, and
+// standard-attribute extraction helpers in handler.go.
+//
 // Related files:
 //   - pkg/server/handler.go (the helpers under test)
 //

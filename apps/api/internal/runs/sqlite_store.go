@@ -357,10 +357,10 @@ type rowScanner interface {
 // scanRun decodes a row from the runs table into a *Run, tolerating NULLs.
 func scanRun(row rowScanner) (*Run, error) {
 	var (
-		id, name, status, createdAt   string
-		startedAt, finishedAt         sql.NullString
-		cfgJSON, progJSON             string
-		summaryJSON                   sql.NullString
+		id, name, status, createdAt string
+		startedAt, finishedAt       sql.NullString
+		cfgJSON, progJSON           string
+		summaryJSON                 sql.NullString
 	)
 	if err := row.Scan(&id, &name, &status, &createdAt, &startedAt, &finishedAt, &cfgJSON, &progJSON, &summaryJSON); err != nil {
 		return nil, err

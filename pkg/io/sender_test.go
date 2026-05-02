@@ -1,10 +1,11 @@
 // Package io — Engine.Send / sender tests.
 //
 // Purpose:
-//   End-to-end tests of the public Send API against in-process echo
-//   servers. Covers happy-path round-trip, retransmit on black-hole,
-//   recovery after partial black-hole, ID exhaustion, context cancel,
-//   and event emission ordering.
+//
+//	End-to-end tests of the public Send API against in-process echo
+//	servers. Covers happy-path round-trip, retransmit on black-hole,
+//	recovery after partial black-hole, ID exhaustion, context cancel,
+//	and event emission ordering.
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io

@@ -1,5 +1,9 @@
 // Package scenario — coverage tests for small helpers and adapters.
 //
+// Purpose: Tests for internal helpers: parseSourceIPs, configHash,
+// lifecycleEvent, bridge adapters, poolLookupAdapter, and Runner
+// construction/lifecycle.
+//
 // Briefing: .orchestration/briefings/3a-scenario-cli.md
 package scenario
 

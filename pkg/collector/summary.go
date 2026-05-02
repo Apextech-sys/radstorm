@@ -1,9 +1,10 @@
 // Package collector — Summary type mirroring summary.json from results-schema.md.
 //
 // Purpose:
-//   Defines the Go structs that marshal to the summary.json document
-//   produced at the end of every run. The JSON tags pin the wire field
-//   names to the frozen contract in .orchestration/contracts/results-schema.md.
+//
+//	Defines the Go structs that marshal to the summary.json document
+//	produced at the end of every run. The JSON tags pin the wire field
+//	names to the frozen contract in .orchestration/contracts/results-schema.md.
 //
 // Related files:
 //   - pkg/collector/aggregate.go (constructs Summary)

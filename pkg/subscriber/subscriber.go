@@ -160,11 +160,11 @@ type Subscriber struct {
 
 	// Session identity (computed at construction so server-listener
 	// lookups always see stable values).
-	nasPort       uint32
-	sessionID     string
-	framedIP      net.IP
-	callingStaID  string
-	nasPortID     string
+	nasPort      uint32
+	sessionID    string
+	framedIP     net.IP
+	callingStaID string
+	nasPortID    string
 
 	// FSM state ---------------------------------------------------
 	mu              sync.RWMutex

@@ -126,7 +126,7 @@ func TestPool_Lookup_PrefersSessionID(t *testing.T) {
 
 	target := p.Get(1)
 	pkt := &radius.Packet{Code: radius.CodeCoARequest}
-	require.NoError(t, pkt.Attributes.AddString(radius.AttrUserName, "first"))         // wrong subscriber
+	require.NoError(t, pkt.Attributes.AddString(radius.AttrUserName, "first")) // wrong subscriber
 	require.NoError(t, pkt.Attributes.AddString(radius.AttrAcctSessionID, target.SessionID()))
 
 	got, ok := p.Lookup(pkt)

@@ -1,10 +1,11 @@
 // Package events — tests for Event constructors and Parquet schema mapping.
 //
 // Purpose:
-//   Pin the Parquet schema (column names + logical types) so accidental
-//   field renames or tag changes break the build before they break
-//   downstream Parquet readers. Also exercise every constructor to keep
-//   coverage high.
+//
+//	Pin the Parquet schema (column names + logical types) so accidental
+//	field renames or tag changes break the build before they break
+//	downstream Parquet readers. Also exercise every constructor to keep
+//	coverage high.
 //
 // Related files:
 //   - pkg/events/event.go (subject under test)

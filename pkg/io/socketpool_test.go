@@ -1,9 +1,10 @@
 // Package io — SocketPool tests.
 //
 // Purpose:
-//   Verifies socket binding (single ephemeral port per source IP, port
-//   range), round-robin selection, Close idempotence, and validation of
-//   port-range arguments.
+//
+//	Verifies socket binding (single ephemeral port per source IP, port
+//	range), round-robin selection, Close idempotence, and validation of
+//	port-range arguments.
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io

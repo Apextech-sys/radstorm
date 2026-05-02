@@ -352,9 +352,9 @@ func strFormatInt(n int64) string {
 		return "0"
 	}
 	var (
-		buf  [20]byte
-		i    = len(buf)
-		neg  bool
+		buf [20]byte
+		i   = len(buf)
+		neg bool
 	)
 	if n < 0 {
 		neg = true

@@ -1,5 +1,8 @@
 // Package scenario — tests for Phase enum + transition validation.
 //
+// Purpose: Tests for phaseOrder, nextPhase, and validateTransition covering
+// happy-path progressions and illegal skip/reverse transitions.
+//
 // Briefing: .orchestration/briefings/3a-scenario-cli.md
 package scenario
 

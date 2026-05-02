@@ -1,9 +1,10 @@
 // Package io — IDAllocator tests.
 //
 // Purpose:
-//   Verifies the per-tuple bitmap allocator: exhaustion, release,
-//   isolation between tuples, and concurrent allocate/release safety
-//   (run with -race).
+//
+//	Verifies the per-tuple bitmap allocator: exhaustion, release,
+//	isolation between tuples, and concurrent allocate/release safety
+//	(run with -race).
 //
 // Briefing: .orchestration/briefings/2a-io-layer.md
 package io
