@@ -1,1 +1,8 @@
 {"ts":"2026-05-02T00:55:00Z","wave":0,"slice":null,"task":"bootstrap","agent":"orchestrator","status":"in-progress","note":"Setting up repo, contracts, briefings"}
+{"ts":"2026-05-02T01:10:00Z","wave":0,"slice":null,"task":"bootstrap","agent":"orchestrator","status":"done","note":"Wave 0 committed and pushed (commit 670c53c). Toolchain verified: Go 1.26.2, Node 24.12, Docker 29.4. Worktrees created for Wave 1 slices."}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1a","task":"radius-protocol","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1a","branch":"wave-1/1a-radius"}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1b","task":"config","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1b","branch":"wave-1/1b-config"}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1c","task":"events-collector","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1c","branch":"wave-1/1c-events"}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1d","task":"frontend-scaffold","agent":"frontend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1d","branch":"wave-1/1d-frontend-scaffold"}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1e","task":"docker-rig","agent":"devops-engineer","status":"dispatched","worktree":"C:/dev/radstorm-1e","branch":"wave-1/1e-docker-rig"}
+{"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1f","task":"api-skeleton","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1f","branch":"wave-1/1f-api-skeleton"}

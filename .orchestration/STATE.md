@@ -6,11 +6,22 @@
 
 ## Current state
 
-- **Wave:** 0 — Bootstrap
-- **Phase:** Setting up repo, orchestration tooling, Docker test rig
-- **Last updated:** 2026-05-02 00:55 GMT+2
+- **Wave:** 1 — Contracts & Foundations (in flight)
+- **Phase:** All 6 slices dispatched in parallel via worktrees
+- **Last updated:** 2026-05-02 01:10 GMT+2
 - **Orchestrator session:** Started 2026-05-02 ~00:50 GMT+2 (autonomous overnight build)
 - **Target deliverable by morning:** Working end-to-end system tested at small scale against Docker FreeRADIUS
+
+### Wave 1 in flight
+
+| Slice | Agent | Worktree | Branch | Status |
+|---|---|---|---|---|
+| 1A RADIUS protocol | backend-developer | C:/dev/radstorm-1a | wave-1/1a-radius | dispatched |
+| 1B Config package | backend-developer | C:/dev/radstorm-1b | wave-1/1b-config | dispatched |
+| 1C Events + Collector | backend-developer | C:/dev/radstorm-1c | wave-1/1c-events | dispatched |
+| 1D Frontend scaffold | frontend-developer | C:/dev/radstorm-1d | wave-1/1d-frontend-scaffold | dispatched |
+| 1E Docker FreeRADIUS rig | devops-engineer | C:/dev/radstorm-1e | wave-1/1e-docker-rig | dispatched |
+| 1F API skeleton | backend-developer | C:/dev/radstorm-1f | wave-1/1f-api-skeleton | dispatched |
 
 ## Decisions locked in
 
