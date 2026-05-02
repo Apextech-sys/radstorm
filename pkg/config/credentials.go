@@ -66,6 +66,7 @@ func LoadCredentials(path string) ([]Credential, error) {
 	r := csv.NewReader(f)
 	r.FieldsPerRecord = -1 // tolerate optional trailing columns
 	r.TrimLeadingSpace = true
+	r.Comment = '#' // treat lines starting with # as comments
 
 	header, err := r.Read()
 	if err != nil {

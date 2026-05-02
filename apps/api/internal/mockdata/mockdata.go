@@ -66,15 +66,15 @@ func Templates() []Template {
 
 func baseTarget() config.Target {
 	return config.Target{
-		AuthAddress:  "127.0.0.1:1812",
-		AcctAddress:  "127.0.0.1:1813",
+		AuthAddress:  "127.0.0.1:11812",
+		AcctAddress:  "127.0.0.1:11813",
 		SharedSecret: "testing123",
 	}
 }
 
 func baseCoa() config.CoaListener {
 	return config.CoaListener{
-		BindAddress:  "0.0.0.0:3799",
+		BindAddress:  "0.0.0.0:13799",
 		SharedSecret: "testing123",
 	}
 }
