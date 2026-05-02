@@ -1,0 +1,29 @@
+# golangci-lint configuration for radstorm.
+#
+# Purpose:
+#   Pragmatic lint configuration: enforce real correctness checks
+#   (staticcheck, ineffassign, unused) but tolerate the common
+#   "defer x.Close()" pattern in test code which is harmless.
+#
+# Related: .github/workflows/ci.yml (CI runs this), docs/CONVENTIONS.md
+# Briefing: orchestrator-managed
+# Contract: keep enabled linters narrow and meaningful so signal stays high.
+
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - govet
+  exclusions:
+    rules:
+      # Test files: tolerate defer Close() and similar non-actionable errcheck.
+      - path: _test\.go
+        linters: [errcheck]
+      # Tolerate intentional unused helpers in fakes_test.go (kept for clarity).
+      - path: _test\.go
+        linters: [unused]

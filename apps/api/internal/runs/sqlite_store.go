@@ -113,7 +113,7 @@ func (s *SQLiteStore) reapOrphans() error {
 	if err != nil {
 		return fmt.Errorf("query orphans: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	type orphan struct {
 		id       string
@@ -240,7 +240,7 @@ func (s *SQLiteStore) List(limit int, status string) []*Run {
 		// List has no error path in the interface; return empty on failure.
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := make([]*Run, 0, 16)
 	for rows.Next() {

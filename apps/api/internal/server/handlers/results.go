@@ -288,7 +288,7 @@ func (h *ResultsHandler) Artifact(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to open artifact", err.Error())
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	info, err := f.Stat()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to stat artifact", err.Error())

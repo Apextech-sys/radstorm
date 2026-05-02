@@ -37,20 +37,15 @@ var (
 func buildFakeCLI(t *testing.T) string {
 	t.Helper()
 	fakeCLIOnce.Do(func() {
-		dir := t.TempDir() // safe: t.TempDir is process-scoped enough for our use
-		bin := filepath.Join(dir, "fakecli")
-		if runtime.GOOS == "windows" {
-			bin += ".exe"
-		}
-		// Persist beyond t.TempDir cleanup by copying to a stable temp.
-		// Actually t.TempDir is removed at the end of the *test*, not
-		// the process. Use os.MkdirTemp directly instead.
+		// Use os.MkdirTemp (not t.TempDir) because the binary needs to outlive
+		// the individual test that triggered the build — fakeCLIOnce is
+		// process-scoped and other tests will reuse the cached path.
 		stableDir, err := os.MkdirTemp("", "radstorm-fakecli-*")
 		if err != nil {
 			fakeCLIErr = err
 			return
 		}
-		bin = filepath.Join(stableDir, "fakecli")
+		bin := filepath.Join(stableDir, "fakecli")
 		if runtime.GOOS == "windows" {
 			bin += ".exe"
 		}

@@ -21,7 +21,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -704,11 +703,12 @@ func TestStopUnblocksReadersWhenContextCancelled(t *testing.T) {
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer stopCancel()
 	stopErr := l.Stop(stopCtx)
-	// Either nil (clean drain) or ErrAlreadyStopped if the cancel watcher
-	// races to call closeConn before us — but Stop itself uses sync.Once
-	// so it always returns nil on the FIRST call.
-	if stopErr != nil && !errors.Is(stopErr, context.DeadlineExceeded) {
-		// The context-cancel watcher closed the conn; that's fine.
-		// Stop's sync.Once should still report success.
+	// Stop must succeed cleanly OR return DeadlineExceeded. Anything else
+	// (e.g. an unexpected close error) is a real failure. The cancel watcher
+	// may have closed the conn first; that's fine because Stop uses sync.Once
+	// internally and reports success on the first call.
+	if stopErr != nil {
+		require.ErrorIs(t, stopErr, context.DeadlineExceeded,
+			"Stop returned unexpected error: %v", stopErr)
 	}
 }

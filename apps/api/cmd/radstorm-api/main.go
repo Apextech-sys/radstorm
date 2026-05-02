@@ -60,7 +60,7 @@ func main() {
 	// Handle --version / -v / version flag without booting the server.
 	for _, a := range os.Args[1:] {
 		if a == "--version" || a == "-v" || a == "version" {
-			os.Stdout.WriteString("radstorm-api version " + Version + "\n")
+			_, _ = os.Stdout.WriteString("radstorm-api version " + Version + "\n")
 			return
 		}
 	}
@@ -92,7 +92,7 @@ func main() {
 			slog.String("db_path", dbPath), slog.Any("err", err))
 		os.Exit(1)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	runner, err := runs.NewRunner(store, runs.Options{
 		DataDir: dataDir,

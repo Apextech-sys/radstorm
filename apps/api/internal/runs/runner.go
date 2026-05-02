@@ -320,7 +320,7 @@ func writeConfigTOML(path string, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	enc := toml.NewEncoder(f)
 	if err := enc.Encode(cfg); err != nil {
 		return err

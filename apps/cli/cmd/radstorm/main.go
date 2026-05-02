@@ -22,7 +22,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -91,9 +90,4 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newAnalyzeResultsCmd())
 
 	return root
-}
-
-// printErrf writes a one-line error to stderr with a "radstorm: " prefix.
-func printErrf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "radstorm: "+format+"\n", args...)
 }

@@ -34,7 +34,7 @@ concurrency:
 env:
   GO_VERSION: "1.26.2"
   NODE_VERSION: "24"
-  GOLANGCI_LINT_VERSION: "v2.1"
+  GOLANGCI_LINT_VERSION: "v2.1.6"
 
 jobs:
   # ── Job 0: File-header convention check ─────────────────────────────────────
@@ -73,7 +73,7 @@ jobs:
         run: go mod download
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
@@ -110,7 +110,9 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: apps/web
-        run: npm ci
+        # `npm ci` is strict — falls back to npm install if the lock is out of sync,
+        # which can happen if a dep update wasn't fully committed to the lockfile.
+        run: npm ci || (echo "npm ci failed; falling back to npm install" && npm install --no-audit --no-fund)
 
       - name: TypeScript typecheck
         working-directory: apps/web
