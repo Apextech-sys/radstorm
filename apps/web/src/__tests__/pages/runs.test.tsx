@@ -2,14 +2,16 @@
  * Smoke tests for the Runs list page.
  *
  * Purpose:
- *   Asserts that the Runs page renders without throwing and contains
- *   the expected heading and "Coming in Wave 2" placeholder.
+ *   Asserts that the Runs page renders without throwing, shows the
+ *   heading, and renders the runs table (which shows loading skeletons
+ *   before the mocked API resolves).
  *
  * Related files:
  *   - src/app/runs/page.tsx (component under test)
- *   - src/components/layout/page-container.tsx
+ *   - src/components/runs/runs-table.tsx (child component)
+ *   - src/lib/api.ts (mocked)
  *
- * Briefing: .orchestration/briefings/1d-frontend-scaffold.md
+ * Briefing: .orchestration/briefings/2d-frontend-pages.md
  *
  * Contract: internal
  */
@@ -40,6 +42,18 @@ vi.mock("next-themes", () => ({
   ),
 }));
 
+// Mock the API to return an empty runs list
+vi.mock("@/lib/api", () => ({
+  listRuns: vi.fn().mockResolvedValue({ runs: [] }),
+  ApiError: class ApiError extends Error {
+    status: number;
+    constructor(status: number, msg: string) {
+      super(msg);
+      this.status = status;
+    }
+  },
+}));
+
 describe("Runs page", () => {
   it("renders without crashing", () => {
     render(<RunsPage />);
@@ -50,8 +64,8 @@ describe("Runs page", () => {
     expect(screen.getByText("Runs")).toBeInTheDocument();
   });
 
-  it("shows the Wave 2 placeholder", () => {
+  it("shows the New Run action button", () => {
     render(<RunsPage />);
-    expect(screen.getByText(/Wave 2/i)).toBeInTheDocument();
+    expect(screen.getByText("New Run")).toBeInTheDocument();
   });
 });
