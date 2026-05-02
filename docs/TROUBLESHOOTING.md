@@ -220,3 +220,249 @@ Or change the port via environment variables:
 RADSTORM_API_ADDR=:8081 ./bin/radstorm-api
 # Then set NEXT_PUBLIC_API_BASE_URL=http://localhost:8081 for the frontend
 ```
+
+---
+
+## Production failure modes
+
+The following issues appear only at scale (10k+ subscribers on a dedicated Linux host). They do not arise in the laptop Docker rig environment.
+
+---
+
+### Identifier exhaustion at scale
+
+**Symptom:** `run.log` contains `"msg":"identifier exhausted"`. Subscribers stall; `established` count stops rising while `in_flight` keeps climbing.
+
+**Capacity math:** Each `(srcIP, srcPort, dstIP, dstPort)` 4-tuple supports 256 concurrent in-flight requests. With one source IP and port range [10000, 60000]:
+
+```
+50,000 ports × 256 IDs = 12.8M maximum — but this is theoretical.
+At 1M subscribers with 10% concurrency: 100,000 in-flight / 256 = ~391 pairs needed.
+At pessimal (all in-flight): 1,000,000 / 256 = ~3,907 pairs → 8 IPs × 500 ports each.
+```
+
+**Fix:** Add source IP aliases. Each new source IP adds `port_range_width × 256` capacity.
+
+```bash
+# Add 8 aliases on eth0
+for i in $(seq 1 8); do
+    sudo ip addr add 192.168.100.${i}/24 dev eth0 label eth0:${i}
+done
+
+# Verify all bound
+ip addr show eth0 | grep 192.168.100
+```
+
+Update `source.ips` in your config with all new addresses.
+
+---
+
+### Source IP alias not actually bound
+
+**Symptom:** `validate-config` fails with `source.ips: bind failed on 192.168.100.2` or the run starts but immediately produces `ErrIdentifierExhausted` even though you think you have enough IPs.
+
+**Cause:** IP aliases do not survive a reboot unless made persistent.
+
+**Verify:**
+
+```bash
+ip addr show eth0 | grep 192.168.100
+# Each alias you expect should appear with "secondary" label
+```
+
+If an alias is missing, add it again:
+
+```bash
+sudo ip addr add 192.168.100.2/24 dev eth0 label eth0:2
+```
+
+For persistent aliases, use Netplan (Ubuntu) or `ifcfg` files (RHEL). See [docs/PRODUCTION-DEPLOYMENT.md §5](PRODUCTION-DEPLOYMENT.md#5-source-ip-alias-setup).
+
+---
+
+### Port range exhaustion
+
+**Symptom:** `run.log` or `dmesg` shows socket bind failures. The OS cannot allocate source ports within the configured range.
+
+**Cause:** The sysctl `net.ipv4.ip_local_port_range` is narrower than your `source.port_range`, or the OS has consumed ports in that range for other connections.
+
+**Detect:**
+
+```bash
+sysctl net.ipv4.ip_local_port_range
+# Default output: net.ipv4.ip_local_port_range = 32768	60999
+# This overlaps with radstorm's default port_range [10000, 60000] — potential conflict
+```
+
+**Fix:** Widen the dedicated port range and ensure it does not overlap with the OS ephemeral range:
+
+```bash
+# Push OS ephemeral range above 60000
+sudo sysctl -w net.ipv4.ip_local_port_range="60001 65000"
+
+# Now radstorm can safely use [10000, 59999]
+# Update source.port_range in your scenario config accordingly
+```
+
+Make persistent:
+
+```bash
+echo "net.ipv4.ip_local_port_range = 60001 65000" | sudo tee -a /etc/sysctl.d/99-radstorm.conf
+sudo sysctl -p /etc/sysctl.d/99-radstorm.conf
+```
+
+---
+
+### Kernel UDP buffer drops
+
+**Symptom:** Run completes but `established` count is lower than expected. `run.log` shows no timeouts, but `retransmits.total` is high. The server is fast but replies are being lost on the receive path.
+
+**Detect:**
+
+```bash
+netstat -su | grep -i 'receive buffer errors\|errors'
+# Or
+cat /proc/net/udp | awk '{print $8}' | sort | uniq -c
+# Check /proc/net/snmp for RcvbufErrors
+cat /proc/net/snmp | grep Udp
+# InErrors column should be near zero
+```
+
+If `RcvbufErrors` is climbing during the run, the kernel is dropping UDP packets because the receive buffer is full.
+
+**Fix:**
+
+```bash
+sudo sysctl -w net.core.rmem_max=134217728
+sudo sysctl -w net.core.rmem_default=33554432
+
+# Make persistent
+echo "net.core.rmem_max = 134217728" | sudo tee -a /etc/sysctl.d/99-radstorm.conf
+echo "net.core.rmem_default = 33554432" | sudo tee -a /etc/sysctl.d/99-radstorm.conf
+sudo sysctl -p /etc/sysctl.d/99-radstorm.conf
+```
+
+---
+
+### File descriptor limits
+
+**Symptom:** The run process crashes with `too many open files`, or `validate-config` fails with `bind: too many open files`.
+
+**Detect:**
+
+```bash
+ulimit -n
+# If this is 1024, it is too low for large-scale tests
+```
+
+**Fix (current session):**
+
+```bash
+ulimit -n 1048576
+```
+
+**Fix (permanent):**
+
+```bash
+cat <<'EOF' | sudo tee -a /etc/security/limits.conf
+*    soft    nofile    1048576
+*    hard    nofile    1048576
+EOF
+# Log out and back in, or restart the service
+```
+
+For systemd services, add `LimitNOFILE=1048576` to the `[Service]` block. See [docs/PRODUCTION-DEPLOYMENT.md §7](PRODUCTION-DEPLOYMENT.md#7-file-descriptor-limits).
+
+---
+
+### Conntrack table fills (firewall in path)
+
+**Symptom:** After tens of thousands of subscribers, new packets stop going through. The RADIUS server appears unresponsive. `dmesg` shows `nf_conntrack: table full, dropping packet`.
+
+**Cause:** If iptables or nftables with connection tracking is active on the test host, each UDP flow creates a conntrack entry. At large scale, the conntrack table fills.
+
+**Detect:**
+
+```bash
+sudo cat /proc/sys/net/netfilter/nf_conntrack_count
+sudo cat /proc/sys/net/netfilter/nf_conntrack_max
+# If count is close to max, the table is filling
+```
+
+**Fix — increase table size:**
+
+```bash
+sudo sysctl -w net.netfilter.nf_conntrack_max=2000000
+echo "net.netfilter.nf_conntrack_max = 2000000" | sudo tee -a /etc/sysctl.d/99-radstorm.conf
+```
+
+**Fix — disable conntrack for RADIUS flows entirely (preferred at scale):**
+
+```bash
+# Skip conntrack for outbound RADIUS packets
+sudo iptables -t raw -A OUTPUT -p udp --dport 1812 -j NOTRACK
+sudo iptables -t raw -A OUTPUT -p udp --dport 1813 -j NOTRACK
+# Skip conntrack for inbound replies
+sudo iptables -t raw -A PREROUTING -p udp --sport 1812 -j NOTRACK
+sudo iptables -t raw -A PREROUTING -p udp --sport 1813 -j NOTRACK
+```
+
+---
+
+### Server replies arrive but with bad Response Authenticator
+
+**Symptom:** `run.log` contains `"msg":"validation_failed"` or `"bad authenticator"` for many packets. Subscribers keep retransmitting and eventually time out, but the RADIUS server is sending replies.
+
+**Cause:** The RADIUS server sent a reply using a different shared secret than radstorm used. This can happen when the RADIUS server is a load-balanced cluster where different nodes have different NAS entries with different secrets, or when the NAS record on the server has a stale secret.
+
+**Fix:** Ensure `[target].shared_secret` matches the NAS secret for radstorm's source IP on every node behind the load balancer. If the server cluster uses per-NAS secrets, all nodes must agree on the same secret for radstorm's `nas.ip_address`.
+
+To verify, capture one packet exchange with `tcpdump` and manually verify the Response Authenticator:
+
+```bash
+sudo tcpdump -i eth0 -w /tmp/radius-capture.pcap udp port 1812
+# Run a single-auth test
+./bin/radstorm single-auth --config /data/scenarios/test.toml --user sub00000001 --pass pw00000001
+# Ctrl-C the tcpdump
+# Open the pcap in Wireshark and check the RADIUS → Response Authenticator field
+```
+
+---
+
+### Test box CPU saturated
+
+**Symptom:** Run takes much longer than expected. `top` or `htop` shows the radstorm process at 100% on all cores. The RADIUS server's CPU is low.
+
+**Cause:** The sharded collector, socket pool, or Parquet writers are CPU-bound on the test host. This is a test infrastructure bottleneck, not a RADIUS server issue.
+
+**Detect:**
+
+```bash
+top -p $(pgrep radstorm) -d 1
+# Watch %CPU column; if near 100 × core_count, radstorm is the bottleneck
+```
+
+**Fix:**
+1. Run on a host with more CPU cores (the collector scales linearly with cores)
+2. Increase `output.flush_interval_sec` to reduce Parquet write pressure (at the cost of higher memory usage)
+3. Reduce subscriber count or use `cold_start` (Gaussian ramp) instead of `pessimal` to spread the load over time
+4. Ensure the test host has no other significant processes running
+
+---
+
+### Scenario completes but `still_in_flight_at_end > 0`
+
+**Symptom:** The run finishes with `outcome=succeeded` but `summary.json` shows `"still_in_flight_at_end": N` where N > 0.
+
+**Cause:** The drain timeout (`--drain-seconds`) expired before all in-flight requests received replies. These subscribers were abandoned — they are not counted in `established` or `auth_failed`, they are simply discarded.
+
+**Fix:** Increase the drain timeout:
+
+```bash
+./bin/radstorm run-scenario \
+  --config /data/scenarios/scenario.toml \
+  --out /data/results/run1 \
+  --drain-seconds 120    # increase from default 30
+```
+
+The drain timeout should be at least `retransmit.initial_timeout_ms × (retransmit.max_retries + 1)` = `5000 × 4 = 20,000ms = 20 seconds` for the default policy. Use 60–120 seconds as a safe value for large runs where some subscribers may be in their final retransmit cycle when the ramp ends.

@@ -14,6 +14,8 @@ Validated end-to-end: 100 subscribers in under 6 seconds against Dockerized Free
 
 Five minutes from clone to first successful run. Assumes Docker Desktop is installed.
 
+**For network engineers:** start with [docs/EVALUATION-GUIDE.md](docs/EVALUATION-GUIDE.md) — the workflow for comparing FreeRADIUS and Interstellar at 1M-subscriber scale.
+
 ---
 
 ## Architecture
@@ -145,8 +147,14 @@ See [`test/e2e/README.md`](test/e2e/README.md) for individual scenario execution
 | Document | Purpose |
 |---|---|
 | [docs/QUICKSTART.md](docs/QUICKSTART.md) | 5-minute getting-started guide |
+| [docs/EVALUATION-GUIDE.md](docs/EVALUATION-GUIDE.md) | End-to-end evaluation workflow for comparing RADIUS server candidates |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | Full operator runbook |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes |
+| [docs/PRODUCTION-DEPLOYMENT.md](docs/PRODUCTION-DEPLOYMENT.md) | Linux production deployment from scratch |
+| [docs/CUSTOM-SCENARIOS.md](docs/CUSTOM-SCENARIOS.md) | Authoring custom scenario TOML configs |
+| [docs/RESULTS-INTERPRETATION.md](docs/RESULTS-INTERPRETATION.md) | Reading and interpreting summary.json and Parquet output |
+| [docs/COMPARISON-WORKFLOW.md](docs/COMPARISON-WORKFLOW.md) | Running two-candidate comparison campaigns |
+| [docs/GLOSSARY.md](docs/GLOSSARY.md) | Terminology reference for network engineers |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes (dev + production) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | RADIUS protocol reference |
 | [docs/CONFIG.md](docs/CONFIG.md) | Configuration schema |

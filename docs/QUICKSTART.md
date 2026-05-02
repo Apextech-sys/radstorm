@@ -118,3 +118,7 @@ Open `http://localhost:3000`. Navigate to **New Run**, pick the "Smoke 100" temp
 | `ErrIdentifierExhausted` | Add more source IPs; see [RUNBOOK.md](RUNBOOK.md#source-ip-setup) |
 
 Full troubleshooting guide: [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+---
+
+**Next: real evaluation work** → [docs/EVALUATION-GUIDE.md](EVALUATION-GUIDE.md)
