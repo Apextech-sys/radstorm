@@ -2,20 +2,18 @@
 //
 // Purpose:
 //
-//	Implements POST /runs (queue a fake run that "succeeds" 2s later),
-//	GET /runs (list), GET /runs/{id} (detail), POST /runs/{id}/cancel.
-//
-//	The fake state machine is intentional: the frontend can drive its UI
-//	end-to-end against this skeleton before the real CLI subprocess
-//	supervisor lands in Wave 3.
+//	Implements POST /runs (spawns the radstorm CLI subprocess via the
+//	Runner), GET /runs (list), GET /runs/{id} (detail), and POST
+//	/runs/{id}/cancel (sends cancellation through the Runner so the
+//	subprocess receives SIGTERM/TerminateProcess).
 //
 // Related files:
 //   - apps/api/internal/runs/store.go (state)
+//   - apps/api/internal/runs/runner.go (subprocess supervisor)
 //   - pkg/config/validate.go (validation)
-//   - apps/api/internal/mockdata/mockdata.go (canned summary)
 //   - .orchestration/contracts/rest-api.md
 //
-// Briefing: .orchestration/briefings/1f-api-skeleton.md
+// Briefing: .orchestration/briefings/3b-api-full.md
 //
 // Contract: response shapes per rest-api.md.
 package handlers
@@ -24,29 +22,23 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
 )
 
-// FakeRunDuration controls how long the fake state machine takes to flip a
-// queued run through running → succeeded. Exposed so tests can override it
-// to keep the suite fast.
-var FakeRunDuration = 2 * time.Second
-
-// RunsHandler bundles dependencies for the runs endpoints. A shared instance
-// is mounted on the router.
+// RunsHandler bundles dependencies for the runs endpoints.
 type RunsHandler struct {
-	Store runs.Store
+	Store  runs.Store
+	Runner *runs.Runner // optional; if nil, Create returns 503 (used by some unit tests)
 }
 
-// NewRunsHandler constructs a RunsHandler.
-func NewRunsHandler(store runs.Store) *RunsHandler {
-	return &RunsHandler{Store: store}
+// NewRunsHandler constructs a RunsHandler. runner may be nil for tests
+// that only exercise non-Create endpoints.
+func NewRunsHandler(store runs.Store, runner *runs.Runner) *RunsHandler {
+	return &RunsHandler{Store: store, Runner: runner}
 }
 
 // createRunRequest is the JSON body shape for POST /runs.
@@ -55,9 +47,12 @@ type createRunRequest struct {
 	Config *config.Config `json:"config"`
 }
 
-// Create handles POST /api/v1/runs. It validates the config, rejects with
-// 409 if a run is already active, and otherwise stores a queued run plus
-// kicks off a goroutine that progresses the run through the fake lifecycle.
+// Create handles POST /api/v1/runs.
+//
+// Flow: validate -> Store.Create (returns 409 if already active) ->
+// Runner.Start (spawns subprocess, transitions queued -> running). If
+// Runner.Start fails we delete the freshly-created row to avoid leaving
+// a permanently-queued ghost behind.
 func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createRunRequest
 	if err := readJSON(r, &req); err != nil {
@@ -72,6 +67,10 @@ func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "config validation failed", err.Error())
 		return
 	}
+	if h.Runner == nil {
+		writeError(w, http.StatusServiceUnavailable, "runner not configured", nil)
+		return
+	}
 	run, err := h.Store.Create(req.Name, req.Config)
 	if err != nil {
 		if errors.Is(err, runs.ErrConflict) {
@@ -81,7 +80,16 @@ func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to create run", err.Error())
 		return
 	}
-	go h.progressFakeRun(run.ID)
+	if err := h.Runner.Start(run.ID); err != nil {
+		// Mark the run failed so HasActive() doesn't get stuck.
+		_, _ = h.Store.UpdateStatus(run.ID, runs.StatusFailed)
+		writeError(w, http.StatusInternalServerError, "failed to start subprocess", err.Error())
+		return
+	}
+	// Re-read to pick up the StartedAt timestamp the Runner just set.
+	if updated, err := h.Store.Get(run.ID); err == nil {
+		run = updated
+	}
 	writeJSON(w, http.StatusCreated, run)
 }
 
@@ -114,6 +122,10 @@ func (h *RunsHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 // Cancel handles POST /api/v1/runs/{id}/cancel.
+//
+// Sends cancellation to the Runner (which kills the subprocess) and flips
+// status to cancelling. The Runner's watcher goroutine is responsible for
+// the final cancelling -> cancelled transition.
 func (h *RunsHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	run, err := h.Store.Get(id)
@@ -135,60 +147,14 @@ func (h *RunsHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to cancel run", err.Error())
 		return
 	}
-	// Schedule final transition to cancelled.
-	go func() {
-		time.Sleep(200 * time.Millisecond)
-		_, _ = h.Store.UpdateStatus(id, runs.StatusCancelled)
-	}()
+	// Best-effort cancellation through the Runner. If the runner doesn't
+	// know about this id (e.g. recovered orphan), we still report 200 so
+	// the UI sees the status flip.
+	if h.Runner != nil {
+		_ = h.Runner.Cancel(id)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id":     updated.ID,
 		"status": updated.Status,
 	})
-}
-
-// progressFakeRun walks a freshly-created run through the queued → running →
-// succeeded transitions over FakeRunDuration. It also writes a few progress
-// snapshots and finally attaches the canned summary so GET /runs/{id} and
-// /results both return realistic-looking data.
-func (h *RunsHandler) progressFakeRun(id string) {
-	// Brief delay before starting so the queued state is observable.
-	time.Sleep(200 * time.Millisecond)
-	if r, _ := h.Store.Get(id); r != nil && r.Status == runs.StatusCancelled {
-		return
-	}
-	if _, err := h.Store.UpdateStatus(id, runs.StatusRunning); err != nil {
-		return
-	}
-
-	// Spread progress updates across FakeRunDuration.
-	seq := mockdata.ProgressSequence()
-	step := FakeRunDuration / time.Duration(len(seq)+1)
-	if step < 50*time.Millisecond {
-		step = 50 * time.Millisecond
-	}
-	for _, ev := range seq {
-		time.Sleep(step)
-		if r, _ := h.Store.Get(id); r == nil || r.Status == runs.StatusCancelled {
-			return
-		}
-		_, _ = h.Store.UpdateProgress(id, runs.Progress{
-			ElapsedMs:              int64(ev.OffsetMs),
-			SubscribersTotal:       1000,
-			SubscribersActivated:   ev.Activated,
-			SubscribersEstablished: ev.Established,
-			SubscribersFailed:      ev.Failed,
-		})
-	}
-
-	// Final transition: if cancellation slipped in, leave it alone.
-	r, _ := h.Store.Get(id)
-	if r == nil {
-		return
-	}
-	if r.Status == runs.StatusCancelling || r.Status == runs.StatusCancelled {
-		_, _ = h.Store.UpdateStatus(id, runs.StatusCancelled)
-		return
-	}
-	_, _ = h.Store.SetSummary(id, mockdata.Summary(id))
-	_, _ = h.Store.UpdateStatus(id, runs.StatusSucceeded)
 }

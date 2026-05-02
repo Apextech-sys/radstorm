@@ -11,7 +11,7 @@
 //   - apps/api/internal/server/router.go (production router)
 //   - apps/api/internal/server/handlers/handlers_test.go
 //
-// Briefing: .orchestration/briefings/1f-api-skeleton.md
+// Briefing: .orchestration/briefings/3b-api-full.md
 //
 // Contract: test-only.
 package handlers
@@ -25,14 +25,14 @@ import (
 )
 
 // newTestRouter returns a chi router with the same routes as the production
-// server, minus middleware. Tests that don't need to assert middleware
-// behaviour use this helper.
-func newTestRouter(store runs.Store) http.Handler {
+// server, minus middleware. dataDir is used to anchor the events / results
+// handlers; pass "" to use the default ("data").
+func newTestRouter(store runs.Store, runner *runs.Runner, dataDir string) http.Handler {
 	r := chi.NewRouter()
 
-	runsHandler := NewRunsHandler(store)
-	eventsHandler := NewEventsHandler(store)
-	resultsHandler := NewResultsHandler(store)
+	runsHandler := NewRunsHandler(store, runner)
+	eventsHandler := NewEventsHandler(store, dataDir)
+	resultsHandler := NewResultsHandler(store, dataDir)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", Health)
