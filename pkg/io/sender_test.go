@@ -139,11 +139,11 @@ func TestEngine_Send_NewIdentifierPerRetransmit(t *testing.T) {
 
 	var seenIDs []uint8
 	var mu sync.Mutex
-	srv.onRequest = func(p *radius.Packet, _ *net.UDPAddr) {
+	srv.SetOnRequest(func(p *radius.Packet, _ *net.UDPAddr) {
 		mu.Lock()
 		seenIDs = append(seenIDs, p.Identifier)
 		mu.Unlock()
-	}
+	})
 
 	c := newFakeCollector()
 	e := newTestEngine(t, secret, c)

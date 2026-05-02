@@ -65,9 +65,17 @@ type testEchoServer struct {
 	stopOnce    sync.Once
 	closeSignal atomic.Bool
 
-	// onRequest is called (under no lock) for every received request,
-	// useful for tests that want to assert what we received.
-	onRequest func(*radius.Packet, *net.UDPAddr)
+	// onRequest is set via SetOnRequest and read by the serve goroutine.
+	// Stored as atomic.Pointer so the test goroutine can safely set it
+	// after newTestEchoServer has already started serve(). Never modify
+	// the underlying function after storing — replace the pointer instead.
+	onRequest atomic.Pointer[func(*radius.Packet, *net.UDPAddr)]
+}
+
+// SetOnRequest installs a callback invoked for every received request.
+// Safe to call after the server has started.
+func (s *testEchoServer) SetOnRequest(fn func(*radius.Packet, *net.UDPAddr)) {
+	s.onRequest.Store(&fn)
 }
 
 func newTestEchoServer(t *testing.T, secret []byte) *testEchoServer {
@@ -131,8 +139,8 @@ func (s *testEchoServer) serve() {
 			continue
 		}
 		s.rxCount.Add(1)
-		if s.onRequest != nil {
-			s.onRequest(req, src)
+		if cb := s.onRequest.Load(); cb != nil && *cb != nil {
+			(*cb)(req, src)
 		}
 		mode := echoMode(s.mode.Load())
 		// Hand each request off to its own goroutine so a delayed-reply
