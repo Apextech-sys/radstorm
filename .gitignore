@@ -41,3 +41,10 @@ secrets/
 
 # Allow commits of orchestration logs (we want history)
 !.orchestration/agent-log/*.jsonl
+
+# Runtime data
+/data/
+/results/
+/bin/
+/dist/
+
