@@ -17,6 +17,16 @@
 
 ---
 
+**Related documentation (for evaluation and production work):**
+- [docs/EVALUATION-GUIDE.md](EVALUATION-GUIDE.md) — evaluation workflow for comparing RADIUS server candidates
+- [docs/PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) — full Linux production setup from bare OS
+- [docs/CUSTOM-SCENARIOS.md](CUSTOM-SCENARIOS.md) — authoring custom scenario configs
+- [docs/RESULTS-INTERPRETATION.md](RESULTS-INTERPRETATION.md) — reading and interpreting summary.json
+- [docs/COMPARISON-WORKFLOW.md](COMPARISON-WORKFLOW.md) — running side-by-side comparisons
+- [docs/GLOSSARY.md](GLOSSARY.md) — terminology reference
+
+---
+
 ## Prerequisites
 
 ### Production target
@@ -382,6 +392,8 @@ Then open `http://localhost:3000`.
 
 ## Production deployment
 
+> For a complete production setup guide including sysctl tuning, source IP alias persistence, firewall rules, systemd service, log rotation, and upgrade procedure, see [docs/PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md).
+
 ### Single-binary deployment
 
 Ship two binaries: `bin/radstorm` and `bin/radstorm-api`. No other files required on the production test host for CLI-only runs.
@@ -456,6 +468,8 @@ Every run writes the following files to `<output.directory>/<run-id>/`:
 | `config.toml` | TOML | Frozen copy of the input config. Always present, even on cancelled runs. |
 
 ### Reading Parquet files
+
+> For ready-to-paste DuckDB queries and detailed interpretation guidance, see [docs/RESULTS-INTERPRETATION.md](RESULTS-INTERPRETATION.md).
 
 ```bash
 # With DuckDB (recommended for quick queries)
