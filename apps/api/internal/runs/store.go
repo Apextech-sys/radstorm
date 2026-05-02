@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/config"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 )
 
 // Status enumerates the run lifecycle states defined in rest-api.md.

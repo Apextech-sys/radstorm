@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -30,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/config"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
 )
@@ -40,10 +41,22 @@ func silentLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// validConfig returns a minimal config that passes Validate.
+// validConfig returns a minimal config that passes Validate. It clones the
+// first mockdata template and points its CredentialsFile at a temp CSV so the
+// `file` validator (which os.Stat's the path) succeeds.
 func validConfig() *config.Config {
-	t := mockdata.Templates()[0]
-	return t.Config
+	tmpl := mockdata.Templates()[0]
+	cfg := *tmpl.Config // shallow copy is enough; we only mutate Subscribers
+	tmp, err := os.CreateTemp("", "creds-*.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer tmp.Close()
+	if _, err := tmp.WriteString("username,password\nu1,p1\n"); err != nil {
+		panic(err)
+	}
+	cfg.Subscribers.CredentialsFile = tmp.Name()
+	return &cfg
 }
 
 // makeRunsHandler returns a RunsHandler with a fresh in-memory store and a

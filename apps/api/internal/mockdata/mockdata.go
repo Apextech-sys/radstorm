@@ -21,7 +21,7 @@
 // frozen REST/results contracts.
 package mockdata
 
-import "github.com/Apextech-sys/reflex-radstorm/apps/api/internal/config"
+import "github.com/Apextech-sys/reflex-radstorm/pkg/config"
 
 // Template describes a single built-in scenario template returned by
 // GET /api/v1/scenarios/templates.
@@ -115,7 +115,7 @@ func smoke100() *config.Config {
 		CoaListener: baseCoa(),
 		Subscribers: config.Subscribers{
 			Count:            100,
-			CredentialsFile:  "test/fixtures/credentials/100.csv",
+			CredentialsFile:  "test/fixtures/credentials/smoke-100.csv",
 			AuthMethodPapPct: 100,
 			TypePppoePct:     100,
 			IncludeAcctStart: true,
@@ -138,7 +138,7 @@ func coldStart1k() *config.Config {
 		CoaListener: baseCoa(),
 		Subscribers: config.Subscribers{
 			Count:            1000,
-			CredentialsFile:  "test/fixtures/credentials/1k.csv",
+			CredentialsFile:  "test/fixtures/credentials/test-1k.csv",
 			AuthMethodPapPct: 100,
 			TypePppoePct:     100,
 			IncludeAcctStart: true,
@@ -165,7 +165,7 @@ func uniform1k() *config.Config {
 		CoaListener: baseCoa(),
 		Subscribers: config.Subscribers{
 			Count:            1000,
-			CredentialsFile:  "test/fixtures/credentials/1k.csv",
+			CredentialsFile:  "test/fixtures/credentials/test-1k.csv",
 			AuthMethodPapPct: 100,
 			TypePppoePct:     100,
 			IncludeAcctStart: true,
@@ -188,7 +188,7 @@ func pessimal1k() *config.Config {
 		CoaListener: baseCoa(),
 		Subscribers: config.Subscribers{
 			Count:            1000,
-			CredentialsFile:  "test/fixtures/credentials/1k.csv",
+			CredentialsFile:  "test/fixtures/credentials/test-1k.csv",
 			AuthMethodPapPct: 100,
 			TypePppoePct:     100,
 			IncludeAcctStart: true,

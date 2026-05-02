@@ -11,7 +11,7 @@
 //
 // Related files:
 //   - apps/api/internal/runs/store.go (state)
-//   - apps/api/internal/config/config_stub.go (validation)
+//   - pkg/config/validate.go (validation)
 //   - apps/api/internal/mockdata/mockdata.go (canned summary)
 //   - .orchestration/contracts/rest-api.md
 //
@@ -28,7 +28,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/config"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata"
 	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
 )
@@ -68,8 +68,8 @@ func (h *RunsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "config is required", nil)
 		return
 	}
-	if errs := config.Validate(req.Config); len(errs) > 0 {
-		writeError(w, http.StatusBadRequest, "config validation failed", errs)
+	if err := config.Validate(req.Config); err != nil {
+		writeError(w, http.StatusBadRequest, "config validation failed", err.Error())
 		return
 	}
 	run, err := h.Store.Create(req.Name, req.Config)
