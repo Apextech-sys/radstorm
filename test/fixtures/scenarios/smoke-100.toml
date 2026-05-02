@@ -1,0 +1,62 @@
+# Scenario fixture: smoke-100 — 100-subscriber smoke test against Docker FreeRADIUS
+#
+# Purpose:
+#   Minimal scenario config used by CI and developers to quickly verify that the
+#   radstorm CLI can authenticate and account 100 subscribers against the local
+#   Docker FreeRADIUS test rig. Completes in seconds on any laptop.
+#
+# Related: test/fixtures/credentials/smoke-100.csv,
+#          test/docker/docker-compose.yml (host ports 11812/11813),
+#          .orchestration/contracts/config-schema.md (schema reference)
+# Briefing: .orchestration/briefings/1e-docker-rig.md
+# Contract: Target host:port must match docker-compose.yml mapped ports.
+#           Shared secret must match clients.conf (testing123).
+
+# ── Target RADIUS server (Docker FreeRADIUS via mapped host ports) ────────────
+[target]
+auth_address  = "127.0.0.1:11812"
+acct_address  = "127.0.0.1:11813"
+shared_secret = "testing123"
+
+# ── CoA listener (not used in smoke; bind to high port to avoid conflicts) ────
+[coa_listener]
+bind_address  = "0.0.0.0:13799"
+shared_secret = "testing123"
+
+# ── Subscribers ───────────────────────────────────────────────────────────────
+[subscribers]
+count              = 100
+credentials_file   = "test/fixtures/credentials/smoke-100.csv"
+auth_method_pap_pct = 50   # 50% PAP, 50% CHAP (matches alternating CSV)
+type_pppoe_pct     = 100
+include_acct_start = true
+
+# ── Source IPs / ports ────────────────────────────────────────────────────────
+[source]
+ips        = ["127.0.0.1"]
+port_range = [20000, 25000]
+
+# ── NAS identification ────────────────────────────────────────────────────────
+[nas]
+ip_address = "127.0.0.1"
+identifier = "radstorm-smoke"
+
+# ── Retransmit policy ─────────────────────────────────────────────────────────
+[retransmit]
+initial_timeout_ms = 3000
+max_retries        = 2
+backoff            = "exponential"
+backoff_base_ms    = 500
+
+# ── Scenario type: uniform — spread 100 activations over 10 seconds ───────────
+[scenario]
+type             = "uniform"
+hard_timeout_sec = 60
+
+[scenario.uniform]
+duration_sec = 10.0
+
+# ── Output ────────────────────────────────────────────────────────────────────
+[output]
+directory         = "results/smoke-100"
+flush_interval_sec = 5

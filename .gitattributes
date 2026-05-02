@@ -1,0 +1,50 @@
+# Git attributes for radstorm
+#
+# Purpose:
+#   Ensures shell scripts and FreeRADIUS config files always use LF line endings
+#   in the repository and when checked out, regardless of the developer's OS.
+#   CRLF endings in FreeRADIUS users/config files cause parsing failures.
+#
+# Related: test/docker/freeradius/users, test/docker/seed/generate-users.sh
+# Briefing: .orchestration/briefings/1e-docker-rig.md
+# Contract: Shell scripts and RADIUS config always LF; source files auto-detected.
+
+# Default: auto-detect text files and normalise to LF in repo
+* text=auto eol=lf
+
+# Shell scripts: always LF
+*.sh text eol=lf
+
+# FreeRADIUS config and data files: always LF (CRLF breaks parsing)
+test/docker/freeradius/users text eol=lf
+test/docker/freeradius/*.conf text eol=lf
+test/docker/freeradius/sites-enabled/* text eol=lf
+
+# TOML, YAML, Dockerfile: LF
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+
+# CSV fixtures: LF
+*.csv text eol=lf
+
+# Go source: LF
+*.go text eol=lf
+
+# TypeScript / JavaScript: LF
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# Markdown: LF
+*.md text eol=lf
+
+# Binaries: keep binary
+*.exe binary
+*.parquet binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary

@@ -1,0 +1,65 @@
+# Docker Compose file for the radstorm local FreeRADIUS test rig
+#
+# Purpose:
+#   Brings up a FreeRADIUS 3.2 container pre-loaded with 5000 seeded test users.
+#   Maps non-privileged host ports 11812/11813 -> container ports 1812/1813 to
+#   avoid requiring elevated privileges on Windows Docker Desktop.
+#   A separate "radclient" sidecar service is defined (profile: smoke) so the
+#   smoke.sh script can run radclient without installing any additional tools.
+#
+# Related: test/docker/freeradius/Dockerfile, test/docker/freeradius/clients.conf,
+#          test/docker/freeradius/users, test/docker/smoke.sh
+# Briefing: .orchestration/briefings/1e-docker-rig.md
+# Contract:
+#   - FreeRADIUS auth  : udp/11812 on host -> udp/1812 in container
+#   - FreeRADIUS acct  : udp/11813 on host -> udp/1813 in container
+#   - Shared secret    : testing123
+#   - Seeded users     : sub00000001/pw00000001 ... sub00005000/pw00005000
+
+services:
+
+  # ── FreeRADIUS server ───────────────────────────────────────────────────────
+  freeradius:
+    build:
+      context: ./freeradius
+      dockerfile: Dockerfile
+    container_name: radstorm-freeradius
+    restart: unless-stopped
+    ports:
+      # Map to non-privileged host ports to avoid Windows privilege requirements.
+      - "11812:1812/udp"
+      - "11813:1813/udp"
+    networks:
+      - radius_net
+    healthcheck:
+      # radclient reads attribute pairs from stdin; use sh -c to pipe them in.
+      test: ["CMD-SHELL",
+             "echo 'User-Name = \"sub00000001\", User-Password = \"pw00000001\"' | radclient -x -t 2 -r 1 127.0.0.1:1812 auth testing123 | grep -q Access-Accept"]
+      interval: 5s
+      timeout: 4s
+      retries: 6
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── radclient sidecar (smoke profile only) ──────────────────────────────────
+  # Used by test/docker/smoke.sh to run radclient without host installation.
+  # Run via: docker compose -f test/docker/docker-compose.yml run --rm radclient ...
+  radclient:
+    image: freeradius/freeradius-server:latest
+    container_name: radstorm-radclient
+    profiles:
+      - smoke
+    networks:
+      - radius_net
+    depends_on:
+      freeradius:
+        condition: service_healthy
+    entrypoint: ["radclient"]
+
+networks:
+  radius_net:
+    driver: bridge
