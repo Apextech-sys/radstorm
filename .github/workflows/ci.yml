@@ -1,0 +1,173 @@
+# GitHub Actions CI workflow for radstorm.
+#
+# Purpose:
+#   Runs on every push and pull_request to main. Three jobs:
+#     1. lint-and-test-go   — Go unit tests + golangci-lint
+#     2. lint-and-test-web  — Next.js typecheck + lint + Vitest unit tests
+#     3. e2e                — Full E2E suite against Docker FreeRADIUS (push to main only)
+#   Module/dependency caches are shared across jobs.
+#
+# Related:
+#   - test/e2e/run.sh (e2e job entry point)
+#   - test/docker/docker-compose.yml (FreeRADIUS rig used by e2e)
+#   - Makefile (build + test targets)
+#
+# Briefing: .orchestration/briefings/3d-e2e.md
+# Contract: All jobs must pass for merge to main. e2e is best-effort on pushes
+#           to main (not required for PRs to reduce runner costs).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel any in-flight run for the same branch on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.26.2"
+  NODE_VERSION: "24"
+  GOLANGCI_LINT_VERSION: "v2.1"
+
+jobs:
+  # ── Job 1: Go lint + unit tests ─────────────────────────────────────────────
+  lint-and-test-go:
+    name: Go lint & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m
+
+      - name: Run Go unit tests
+        run: go test -race -count=1 -timeout=120s ./...
+
+      - name: Build CLI binary
+        run: make build-cli
+
+      - name: Build API binary
+        run: make build-api
+
+      - name: Build parquet-row-count utility
+        run: go build -o test/e2e/parquet-row-count/parquet-row-count ./test/e2e/parquet-row-count/
+
+  # ── Job 2: Frontend lint + typecheck + unit tests ────────────────────────────
+  lint-and-test-web:
+    name: Frontend lint & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: TypeScript typecheck
+        working-directory: apps/web
+        run: npm run typecheck || npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: apps/web
+        run: npm run lint
+
+      - name: Vitest unit tests
+        working-directory: apps/web
+        run: npm test -- --run
+
+      - name: Next.js build
+        working-directory: apps/web
+        run: npm run build
+
+  # ── Job 3: Full E2E suite ────────────────────────────────────────────────────
+  # Runs only on push to main (not PRs) to save runner minutes.
+  # Uses Docker Compose to bring up FreeRADIUS as a sidecar.
+  e2e:
+    name: E2E suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    needs: [lint-and-test-go, lint-and-test-web]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Install Node.js (for completeness; e2e does not need it directly)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify Docker available
+        run: |
+          docker version
+          docker compose version
+
+      - name: Build CLI binary
+        run: make build-cli
+
+      - name: Build API binary
+        run: make build-api
+
+      - name: Build parquet-row-count utility
+        run: go build -o test/e2e/parquet-row-count/parquet-row-count ./test/e2e/parquet-row-count/
+
+      - name: Run E2E suite
+        run: |
+          chmod +x test/e2e/run.sh
+          chmod +x test/e2e/scenarios/*.sh
+          bash test/e2e/run.sh 2>&1 | tee /tmp/e2e-output.txt
+          # Propagate exit code from run.sh (tee swallows it otherwise)
+          exit ${PIPESTATUS[0]}
+
+      - name: Upload E2E output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-output-${{ github.run_id }}
+          path: |
+            /tmp/e2e-output.txt
+            /tmp/radstorm-e2e/
+          retention-days: 7
