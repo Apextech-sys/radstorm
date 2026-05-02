@@ -6,3 +6,8 @@
 {"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1d","task":"frontend-scaffold","agent":"frontend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1d","branch":"wave-1/1d-frontend-scaffold"}
 {"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1e","task":"docker-rig","agent":"devops-engineer","status":"dispatched","worktree":"C:/dev/radstorm-1e","branch":"wave-1/1e-docker-rig"}
 {"ts":"2026-05-02T01:10:30Z","wave":1,"slice":"1f","task":"api-skeleton","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-1f","branch":"wave-1/1f-api-skeleton"}
+{"ts":"2026-05-02T05:15:00Z","wave":1,"slice":"all","task":"merge-validate","agent":"orchestrator","status":"done","note":"All 6 Wave 1 branches merged into main (commit eb7ded0). All Go and frontend tests pass. Pushed."}
+{"ts":"2026-05-02T05:20:00Z","wave":2,"slice":"2a","task":"io-layer","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-2a","branch":"wave-2/2a-io"}
+{"ts":"2026-05-02T05:20:00Z","wave":2,"slice":"2b","task":"subscriber","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-2b","branch":"wave-2/2b-subscriber"}
+{"ts":"2026-05-02T05:20:00Z","wave":2,"slice":"2c","task":"server-listener","agent":"backend-developer","status":"dispatched","worktree":"C:/dev/radstorm-2c","branch":"wave-2/2c-server-listener"}
+{"ts":"2026-05-02T05:20:00Z","wave":2,"slice":"2d","task":"frontend-pages","agent":"frontend-developer","status":"dispatched","worktree":"C:/dev/radstorm-2d","branch":"wave-2/2d-frontend-pages"}
