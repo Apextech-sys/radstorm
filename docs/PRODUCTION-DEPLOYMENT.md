@@ -11,40 +11,157 @@ The CLI binary runs standalone. No Docker, no Node.js, no database required on t
 ## Table of contents
 
 1. [Hardware requirements](#1-hardware-requirements)
-2. [OS packages](#2-os-packages)
-3. [Getting the binary](#3-getting-the-binary)
-4. [Sysctl tuning](#4-sysctl-tuning)
-5. [Source IP alias setup](#5-source-ip-alias-setup)
-6. [Firewall considerations](#6-firewall-considerations)
-7. [File descriptor limits](#7-file-descriptor-limits)
-8. [Running as a systemd service (API server)](#8-running-as-a-systemd-service)
-9. [Log rotation](#9-log-rotation)
-10. [Backup](#10-backup)
-11. [Upgrade procedure](#11-upgrade-procedure)
+2. [NIC tuning and offloading](#2-nic-tuning-and-offloading)
+3. [OS packages](#3-os-packages)
+4. [Getting the binary](#4-getting-the-binary)
+5. [Sysctl tuning](#5-sysctl-tuning)
+6. [Source IP alias setup](#6-source-ip-alias-setup)
+7. [Firewall considerations](#7-firewall-considerations)
+8. [File descriptor limits](#8-file-descriptor-limits)
+9. [Running as a systemd service (API server)](#9-running-as-a-systemd-service)
+10. [Log rotation](#10-log-rotation)
+11. [Backup](#11-backup)
+12. [Upgrade procedure](#12-upgrade-procedure)
 
 ---
 
 ## 1. Hardware requirements
 
-| Scale tier | Subscribers | CPU | RAM | Disk (results) | NIC |
-|---|---|---|---|---|---|
-| 1k | 1,000 | 2 cores | 4 GB | 2 GB | 1 GbE |
-| 10k | 10,000 | 4 cores | 8 GB | 10 GB | 1 GbE |
-| 100k | 100,000 | 8 cores | 16 GB | 50 GB | 10 GbE |
-| 1M | 1,000,000 | 16+ cores | 64 GB | 500 GB | 10 GbE |
+radstorm sizing falls into four tiers based on subscriber count. Pick the tier that bounds your largest planned test.
 
-**Notes:**
+### Quick reference
 
-- CPU: The sharded event collector and socket pool scale with core count. Fewer cores create a bottleneck in the collector before the RADIUS server becomes the bottleneck.
-- RAM: At 1M subscribers, goroutine stacks alone consume ~2 GB. The Parquet write buffers add another 1–2 GB peak. 64 GB has headroom; 32 GB is a hard minimum for 1M.
-- Disk: Parquet files at 1M subscribers produce ~300–500 GB of event shards. Use a local NVMe or fast SAS; network-attached storage will not keep up with the flush rate.
-- NIC: At 1M subscribers in a cold-start scenario, outbound UDP throughput peaks at several hundred Mbps. A 1 GbE NIC is the ceiling for that tier — use 10 GbE for 100k+.
+| Tier | Subscribers | CPU (physical) | RAM | NIC | Disk | Use case |
+|---|---|---|---|---|---|---|
+| 1 — Smoke / dev | ≤1,000 | 4 cores | 8 GB | loopback or 1 GbE | any SSD, ≥5 GB | Daily dev, CI, sanity checks |
+| 2 — Single-server | 10,000–50,000 | 8 / 16t | 16 GB | 1 GbE (10 GbE preferred) | NVMe, ≥20 GB | Realistic mid-scale tests, integration |
+| 3 — Carrier evaluation | 100,000–1,000,000 | 32 cores / 64t | 64 GB | 10 GbE minimum, **25 GbE recommended for 1M** | NVMe local, ≥500 GB | Vendor evaluation; ISP buy-decision validation |
+| 4 — Beyond 1M | 3M+ | 64+ cores | 128+ GB | 100 GbE + DPDK/AF_XDP | NVMe RAID | Not currently supported (multi-host coordination needed) |
 
-The 1M scale tier is the **architectural target** validated by design. Verify on your specific hardware before treating 1M numbers as definitive.
+The 1M tier is the **architectural target** validated by design. Verify on your specific hardware before treating 1M numbers as definitive.
+
+### Tier 1 — Smoke / dev (≤1k subscribers)
+
+Anything modern. A laptop with 4 cores and 8 GB RAM is fine. The Docker FreeRADIUS rig and the `radstorm` binary will both run on the same box. This is the daily-development tier — useful for sanity checks, CI runs, and developing scenarios.
+
+- Loopback only; no NIC tuning relevant
+- Results per run: ~50 MB
+- Real-world example: an Apple M2 MacBook Air or a 12th-gen Intel i5 desktop are both adequate
+
+### Tier 2 — Realistic single-server tests (10k–50k subscribers)
+
+Mid-range workstation or a small Linux VM. This is where the radstorm-and-target-server-on-different-boxes pattern starts mattering, but you can still get away with a single beefy server running both via Docker for cost.
+
+- **CPU:** 8 cores / 16 threads (e.g. AMD EPYC 7313, Intel Xeon Silver 4310, or modern Ryzen). Fewer cores → the sharded collector becomes the bottleneck before the RADIUS server does.
+- **RAM:** 16 GB. Goroutine stacks (~2 KB each × 50k subs ≈ 100 MB) plus Parquet write buffers (~2 GB peak) plus collector channels (~500 MB) plus runtime overhead.
+- **NIC:** 1 GbE is the ceiling at this tier — outbound RADIUS for a 50k cold-start can briefly hit ~80–150 Mbps. 10 GbE is overkill but cheap insurance.
+- **Disk:** local NVMe; ≥20 GB free. Parquet writes peak at ~50 MB/sec.
+- **Source IPs:** 1–2 aliased IPs are sufficient.
+
+### Tier 3 — Carrier-scale evaluation (100k–1M subscribers)
+
+Dedicated Linux server. This is the tier you'd use to actually evaluate a vendor for an ISP buy decision. You want headroom, not bare minimums.
+
+- **CPU:** 32 physical cores (64 vCPU with SMT). AMD EPYC 9354 (32C @ 3.25 GHz) or dual Xeon Gold 6338. The sharded collector creates one Parquet writer per CPU core; with 32 cores you have 32 parallel write streams. Fewer cores → write contention before RADIUS server saturation.
+- **RAM:** 64 GB. At 1M subscribers: goroutine stacks ~2 GB, in-flight request tables ~200 MB, Parquet buffers ~3 GB peak (256 MB rotation per shard × N shards mid-flush), runtime overhead. **32 GB is the hard floor**; 64 GB has comfort.
+- **NIC:** 10 GbE minimum at 100k. **25 GbE strongly recommended for 1M** — cold-start auth storm can spike to ~1.5 Gbps outbound for the ramp window. See §2 for tuning details.
+- **Disk:** Local NVMe. A 1M cold-start produces ~300–500 GB of Parquet shards. Sequential write at peak hits ~500 MB/sec. **Network-attached storage (NFS, iSCSI) will not keep up** — flushes will block the collector and skew your latency measurements.
+- **Source IPs:** 32 aliased IPs minimum (1M / 256 IDs per tuple ≈ 4000 tuples needed; 32 IPs × ~125 ports each = 4000 tuples). See §6.
+
+### Tier 4 — Beyond 1M (not currently supported)
+
+radstorm currently runs on a single host. For >1M subscriber tests you'd need either substantial single-host hardware (64+ cores, 128+ GB RAM, 100 GbE with DPDK or AF_XDP kernel bypass) or a multi-host distributed coordinator pattern. The latter is not in the codebase today and would be a substantial architectural addition. File an issue with your use case if you need this.
 
 ---
 
-## 2. OS packages
+## 2. NIC tuning and offloading
+
+NIC capabilities matter at Tier 3 and above. At lower tiers, defaults are fine.
+
+### Critical (without these, you can't reliably hit Tier 3)
+
+- **RSS (Receive Side Scaling)** — distributes inbound UDP across multiple CPU cores via packet hashing. Without it, all RX softirq work hits one core and that core caps around 200–400k packets/sec. Every modern 10/25/40 GbE NIC supports RSS; just verify it's enabled:
+  ```bash
+  ethtool -x eth0   # show indirection table
+  ethtool -L eth0 combined 16   # set 16 queues
+  ```
+- **UDP/IP checksum offload (TX + RX)** — NIC computes the L4 checksum in hardware. radstorm uses standard kernel UDP sockets, so this is automatic on capable NICs. Saves 5–15% CPU at scale. Verify:
+  ```bash
+  ethtool -k eth0 | grep -E "(tx|rx)-checksumming"
+  # Expect: "on" for both
+  ```
+
+### Helpful but not critical
+
+- **GRO (Generic Receive Offload)** — aggregates incoming packets into larger logical units before handing to userspace. Modest RX-path win (~5%). Should be on by default:
+  ```bash
+  ethtool -k eth0 | grep generic-receive-offload
+  ```
+- **Multi-queue + IRQ affinity** — pin NIC queue interrupts to specific CPUs, away from the cores running radstorm goroutines. Reduces context-switch noise and improves the latency tail (~10ms off p99 at 1M scale). Use `set_irq_affinity_cpulist.sh` from your NIC vendor's package, or manually:
+  ```bash
+  # Pin queue interrupts to cores 0-7
+  for irq in $(grep eth0 /proc/interrupts | awk '{print $1}' | tr -d ':'); do
+    echo 0-7 > /proc/irq/$irq/smp_affinity_list
+  done
+  # Then let radstorm run on cores 8-31 via taskset:
+  taskset -c 8-31 ./bin/radstorm run-scenario ...
+  ```
+- **Increased ring buffer sizes** — default RX/TX ring sizes are usually 256 or 512; bump to 4096 to absorb bursts:
+  ```bash
+  ethtool -g eth0   # show current
+  ethtool -G eth0 rx 4096 tx 4096   # set to 4096
+  ```
+
+### Doesn't help radstorm
+
+- **TSO / GSO (TCP Segmentation Offload)** — TCP only. radstorm is UDP. No effect.
+- **LRO (Large Receive Offload)** — TCP only. No effect.
+- **Jumbo frames (MTU 9000)** — RADIUS packets are small (~100–500 bytes, well under 1500 MTU). Stay at 1500.
+
+### Future opportunities (not in the codebase today)
+
+- **Hardware timestamping (PTP-class NICs)** — would let radstorm record packet send/receive times at the wire instead of in the kernel, removing scheduling jitter from latency measurements. Useful if you ever need to distinguish 100µs vs 500µs latencies. Would require switching from `net.UDPConn` to raw sockets with `SO_TIMESTAMPING`.
+- **DPDK / AF_XDP kernel bypass** — unlocks 10M+ packets/sec on a single host. Currently radstorm uses the standard kernel UDP stack; bypass would require a substantial rewrite of `pkg/io`. Not needed for 1M-scale work.
+- **SR-IOV** — essential if running radstorm in a virtualized environment. Without an SR-IOV VF, the hypervisor's vNIC bottlenecks around Tier 2.
+
+### NIC recommendations for Tier 3 evaluation work
+
+Two solid options at sensible budgets (2026 pricing, indicative):
+
+| NIC | Speed | RSS | Hardware timestamping | Notes |
+|---|---|---|---|---|
+| **Intel X710-DA2 / X710-DA4** | 10 GbE | Yes (4 queues) | No | Commodity, well-supported on Linux. ~$300–500. Sweet spot for 100k–500k scale. |
+| **NVIDIA / Mellanox ConnectX-6 Lx** | 25 GbE | Yes (excellent — many queues) | Yes | Best in class for radstorm at 1M. ~$600–900. Use this if buying new for serious carrier-scale work. |
+
+Avoid consumer-grade 10 GbE cards (Realtek RTL8125 etc.) — limited RSS support, driver quality varies. Stick with Intel or Mellanox/NVIDIA for evaluation work.
+
+### Verifying your NIC is correctly tuned
+
+Quick diagnostic before a big run:
+
+```bash
+NIC=eth0
+echo "=== Speed and link ==="
+ethtool $NIC | grep -E "(Speed|Duplex|Link)"
+echo
+echo "=== Offloads ==="
+ethtool -k $NIC | grep -E "(tx|rx)-checksumming|receive-offload"
+echo
+echo "=== Queues ==="
+ethtool -l $NIC
+echo
+echo "=== Ring sizes ==="
+ethtool -g $NIC
+echo
+echo "=== Drops (should be 0 after a fresh boot) ==="
+ethtool -S $NIC | grep -iE "drop|miss|err"
+```
+
+If you see non-zero drops or errors after a clean test run, your NIC is the bottleneck — increase ring sizes, enable more RSS queues, or move to a better NIC.
+
+---
+
+## 3. OS packages
 
 ### Ubuntu 22.04
 
@@ -97,7 +214,7 @@ export PATH=$PATH:/usr/local/go/bin
 
 ---
 
-## 3. Getting the binary
+## 4. Getting the binary
 
 ### From GitHub Releases (recommended)
 
@@ -132,7 +249,7 @@ sudo install -m 755 bin/radstorm-api /usr/local/bin/radstorm-api
 
 ---
 
-## 4. Sysctl tuning
+## 5. Sysctl tuning
 
 Apply these settings before any test at 10k subscribers or above. They are safe to apply permanently.
 
@@ -171,7 +288,7 @@ sysctl net.ipv4.ip_local_port_range net.core.rmem_max
 
 ---
 
-## 5. Source IP alias setup
+## 6. Source IP alias setup
 
 RADIUS Identifier is 8 bits: 256 unique IDs per `(srcIP, srcPort, dstIP, dstPort)` tuple. To support large concurrent inflight counts, you need multiple source IPs.
 
@@ -261,7 +378,7 @@ port_range = [10000, 20000]
 
 ---
 
-## 6. Firewall considerations
+## 7. Firewall considerations
 
 ### Outbound (radstorm → RADIUS server)
 
@@ -314,7 +431,7 @@ See [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md#conntrack-table-fills) for dete
 
 ---
 
-## 7. File descriptor limits
+## 8. File descriptor limits
 
 Each bound UDP socket consumes one file descriptor. At large scale with many source IPs and ports, the default system limit (1024 per process) is too low.
 
@@ -343,7 +460,7 @@ root hard    nofile    1048576
 EOF
 ```
 
-For a systemd service, set `LimitNOFILE` in the unit file (see section 8).
+For a systemd service, set `LimitNOFILE` in the unit file (see section 9).
 
 Verify after applying:
 
@@ -355,7 +472,7 @@ ulimit -n
 
 ---
 
-## 8. Running as a systemd service
+## 9. Running as a systemd service
 
 The CLI is designed for interactive use on the test box. The API server (`radstorm-api`) is a long-running daemon that benefits from systemd management.
 
@@ -427,7 +544,7 @@ sudo journalctl -u radstorm-api -f
 
 ---
 
-## 9. Log rotation
+## 10. Log rotation
 
 Run output directories grow large. The API server's SQLite run store stays small. Rotate run artifacts on a schedule.
 
@@ -457,7 +574,7 @@ For Parquet files and full run directories, use a cron job rather than logrotate
 
 ---
 
-## 10. Backup
+## 11. Backup
 
 ### SQLite run store
 
@@ -486,7 +603,7 @@ rsync -avz --progress /opt/radstorm/data/runs/ archive-host:/data/radstorm-runs/
 
 ---
 
-## 11. Upgrade procedure
+## 12. Upgrade procedure
 
 Upgrades are a binary swap. No database migration is required between minor versions unless the release notes say otherwise.
 
