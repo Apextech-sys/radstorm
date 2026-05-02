@@ -6,11 +6,11 @@
 
 ## Current state
 
-- **Wave:** 2 — Core Components (about to dispatch)
-- **Phase:** Wave 1 merged, validated, pushed. Wave 2 briefings in progress.
-- **Last updated:** 2026-05-02 05:10 GMT+2
-- **Orchestrator session:** Started 2026-05-02 ~00:50 GMT+2 (autonomous overnight build)
-- **Target deliverable by morning:** Working end-to-end system tested at small scale against Docker FreeRADIUS
+- **Wave:** COMPLETE
+- **Status:** All 5 waves shipped. Full E2E suite passes (smoke-100, cli-flows, api-flow). System operational end-to-end on `origin/main`.
+- **Last updated:** 2026-05-02 09:50 GMT+2
+- **Orchestrator session:** Started 2026-05-02 ~00:50 GMT+2 — finished ~09:50 GMT+2 (~9 hours wall, ~18 sub-agents + 3 recovery)
+- **Deliverable:** see `MORNING-REPORT.md` at repo root
 
 ### Wave 1 outcomes (all done)
 
