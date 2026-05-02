@@ -1,10 +1,11 @@
 // Command radstorm-api — version metadata.
 //
 // Purpose:
-//   Declares the Version variable for the radstorm-api binary.
-//   The value is overwritten at release build time via -ldflags:
-//     -X main.Version=$(git describe --tags --always)
-//   During development and test builds the default "dev" is used.
+//
+//	Declares the Version variable for the radstorm-api binary.
+//	The value is overwritten at release build time via -ldflags:
+//	  -X main.Version=$(git describe --tags --always)
+//	During development and test builds the default "dev" is used.
 //
 // Related files:
 //   - apps/api/cmd/radstorm-api/main.go (uses Version in startup log)

@@ -57,6 +57,14 @@ const (
 var runnerShutdownTimeout = 10 * time.Second
 
 func main() {
+	// Handle --version / -v / version flag without booting the server.
+	for _, a := range os.Args[1:] {
+		if a == "--version" || a == "-v" || a == "version" {
+			os.Stdout.WriteString("radstorm-api version " + Version + "\n")
+			return
+		}
+	}
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
