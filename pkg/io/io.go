@@ -25,6 +25,13 @@
 // Contract: Public — Engine, Opts, RetransmitPolicy, SendResult,
 // ServerHandler, Collector. Used by pkg/subscriber (sender) and pkg/server
 // (server handler implementor).
+//
+// MEASUREMENT FLOOR: this package uses Go's standard net.UDPConn, which
+// gives userspace timestamps. Effective measurement precision is bounded
+// by kernel scheduling jitter (~50–200µs on a clean Linux box). For sub-
+// millisecond precision we would need to switch to raw sockets with
+// SO_TIMESTAMPING on a hardware-timestamping-capable NIC; this is a
+// deferred design — see docs/decisions/0004-hardware-timestamping.md.
 package io
 
 import (

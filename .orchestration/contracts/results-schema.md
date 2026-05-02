@@ -87,9 +87,48 @@ Written at the end of every run to `<output-dir>/summary.json`.
     "events_parquet": "events.parquet",
     "subscribers_parquet": "subscribers.parquet",
     "run_log": "run.log"
+  },
+
+  "measurement_integrity": {
+    "trust": "high",
+    "events_submitted": 8742,
+    "events_dropped_back_pressure": 0,
+    "outcomes_dropped_back_pressure": 0,
+    "events_dropped_after_stop": 0,
+    "first_drop_offset_ms": null,
+    "last_drop_offset_ms": null,
+    "notes": [
+      "Latency captured with monotonic clock immediately on packet receipt.",
+      "Userspace timestamps via Go net.UDPConn — kernel scheduling jitter floor ≈50–200µs on a clean Linux box."
+    ]
   }
 }
 ```
+
+## measurement_integrity
+
+This section reports signals an operator can use to decide how much to trust the latency aggregations in the same summary file.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `trust` | `"high" \| "medium" \| "low"` | Heuristic rollup. high = 0 drops; medium = <1% drops; low = ≥1% drops. |
+| `events_submitted` | int | Events that successfully landed on a shard channel. Denominator for drop rate. |
+| `events_dropped_back_pressure` | int | Events that Submit() refused because the shard buffer was full. Latency aggregations are computed over a partial event stream when this is non-zero. |
+| `outcomes_dropped_back_pressure` | int | Same for SubmitOutcome (per-subscriber outcome rows). |
+| `events_dropped_after_stop` | int | Events submitted after Stop() — usually a code-path bug; should be 0 in healthy runs. |
+| `first_drop_offset_ms` | int \| null | T0-relative time of the first back-pressure drop. Lets operators correlate with what the test was doing at that moment. |
+| `last_drop_offset_ms` | int \| null | Same for most recent drop. |
+| `notes` | string[] | Freeform human-readable caveats. Always includes the measurement-floor disclaimer; appends a guidance note when drops occurred. |
+
+### Trust semantics
+
+- **`high`** — 0 events dropped. Numbers are reliable to the userspace-timestamp floor (~50–200µs).
+- **`medium`** — <1% of submitted events dropped. Numbers are usable but tail percentiles may be slightly understated (dropped events tend to be the rare slow ones whose Submit happened during a flush burst).
+- **`low`** — ≥1% dropped. Treat tail percentiles with significant care. Re-run with a faster output disk (NVMe required for Tier 3), more CPU cores (more shards = more parallel drain), or a smaller subscriber count.
+
+### Why drop-on-full
+
+The collector deliberately drops events on full channels rather than blocking the submitter. Blocking would back-pressure the receiver/sender goroutines, which would skew the latency measurements of subsequent packets. Losing event-log completeness is acceptable; corrupting measurements is not. The integrity counters surface the trade-off explicitly.
 
 ## Latency distributions
 

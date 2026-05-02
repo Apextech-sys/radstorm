@@ -106,6 +106,22 @@ type Collector struct {
 	// would otherwise panic on a closed channel.
 	dropped atomic.Int64
 
+	// Back-pressure signals. Non-zero values mean Submit hit the
+	// drop-on-full path; this is a MEASUREMENT INTEGRITY warning
+	// because dropped events also represent missed data points
+	// in the in-memory aggregator.
+	eventsDroppedFull   atomic.Int64
+	outcomesDroppedFull atomic.Int64
+	// Wall-clock unix ns of first/last back-pressure drop. Stored as 0
+	// when no drops have occurred. Used to compute offset_ms in summary.
+	firstFullDropNs atomic.Int64
+	lastFullDropNs  atomic.Int64
+
+	// totalSubmitted tracks the count of events that successfully made
+	// it onto a shard channel. Used to compute drop rate as a fraction
+	// for the trust heuristic.
+	totalSubmitted atomic.Int64
+
 	// Parquet writers (owned by their shard goroutine; here only so
 	// Stop can flush + close from the same callsite).
 	writers      []*parquetWriter
@@ -165,10 +181,19 @@ func New(opts Opts) (*Collector, error) {
 	return c, nil
 }
 
-// Submit pushes one event to the appropriate shard. Non-blocking IFF the
-// shard's buffer has room. Selects on stopCh to avoid send-on-closed-chan
-// after Stop. Events submitted after Stop are counted in Dropped() and
-// silently discarded.
+// Submit pushes one event to the appropriate shard. ALWAYS non-blocking:
+//   - If Stop has fired, the event is counted in Dropped() and discarded.
+//   - If the shard channel is full, the event is counted in
+//     EventsDroppedFull() and discarded — Submit does NOT block.
+//
+// Drop-on-full is deliberate: blocking Submit on a full channel would
+// back-pressure the receiver/sender goroutines, which would skew the
+// latency measurements of subsequent packets. Losing event-log
+// completeness is acceptable; corrupting measurements is not.
+//
+// Operators MUST inspect MeasurementIntegrity in summary.json after a
+// run. A non-zero EventsDroppedFull means latency aggregations are
+// computed over a partial event stream and should be treated with care.
 //
 // Hot path. No allocation, no map writes, no locking.
 func (c *Collector) Submit(e events.Event) {
@@ -183,13 +208,15 @@ func (c *Collector) Submit(e events.Event) {
 	}
 	select {
 	case c.shardCh[shard] <- e:
-	case <-c.stopCh:
-		c.dropped.Add(1)
+		c.totalSubmitted.Add(1)
+	default:
+		c.recordFullDrop(&c.eventsDroppedFull)
 	}
 }
 
-// SubmitOutcome pushes one SubscriberOutcome. Same semantics as Submit:
-// non-blocking once Stop has fired, silently discards thereafter.
+// SubmitOutcome pushes one SubscriberOutcome. Same drop-on-full semantics
+// as Submit: never blocks, increments OutcomesDroppedFull() when the
+// outcome channel is saturated.
 func (c *Collector) SubmitOutcome(o events.SubscriberOutcome) {
 	if c.stopped.Load() {
 		c.dropped.Add(1)
@@ -197,10 +224,31 @@ func (c *Collector) SubmitOutcome(o events.SubscriberOutcome) {
 	}
 	select {
 	case c.outcomeCh <- o:
-	case <-c.stopCh:
-		c.dropped.Add(1)
+	default:
+		c.recordFullDrop(&c.outcomesDroppedFull)
 	}
 }
+
+// recordFullDrop bumps a drop counter and records the wall-clock time
+// of the first/last drop for measurement-integrity reporting.
+func (c *Collector) recordFullDrop(counter *atomic.Int64) {
+	counter.Add(1)
+	nowNs := time.Now().UnixNano()
+	c.firstFullDropNs.CompareAndSwap(0, nowNs)
+	c.lastFullDropNs.Store(nowNs)
+}
+
+// EventsDroppedFull reports the number of events Submit refused because
+// the destination shard channel was full. Non-zero means the collector
+// could not keep up with submission rate — measurement integrity warning.
+func (c *Collector) EventsDroppedFull() int64 { return c.eventsDroppedFull.Load() }
+
+// OutcomesDroppedFull reports the same for SubmitOutcome.
+func (c *Collector) OutcomesDroppedFull() int64 { return c.outcomesDroppedFull.Load() }
+
+// TotalSubmitted reports the count of events that successfully made it
+// onto a shard channel. Used for drop-rate denominators.
+func (c *Collector) TotalSubmitted() int64 { return c.totalSubmitted.Load() }
 
 // Dropped reports the count of events/outcomes rejected because Submit
 // was called after Stop. Useful as a smoke-test assertion (should be 0

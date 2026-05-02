@@ -397,9 +397,13 @@ func TestSubscribersParquetWritten(t *testing.T) {
 }
 
 // TestPerformance1MEvents verifies the briefing's perf target: submit 1M
-// events from 8 producers in <5s with no loss. The race detector adds
-// 5–10x overhead and would fail this gate, so the timing assertion is
-// skipped under -race; correctness assertions still run.
+// events from 8 producers in <5s with no loss. Buffers sized to fit the
+// full event volume so drop-on-full Submit doesn't shed under burst load
+// faster than the shard goroutines can drain.
+//
+// The race detector adds 5–10x overhead and would fail the timing gate,
+// so the timing assertion is skipped under -race; correctness assertions
+// still run.
 func TestPerformance1MEvents(t *testing.T) {
 	if testing.Short() {
 		t.Skip("perf test skipped under -short")
@@ -410,7 +414,17 @@ func TestPerformance1MEvents(t *testing.T) {
 		want            = producers * eventsPerWorker // 1_000_000
 	)
 	dir := t.TempDir()
-	c, err := New(Opts{Dir: dir, ShardCount: 8, PerShardBuffer: 32768, FlushInterval: 250 * time.Millisecond, BatchSize: 4096})
+	c, err := New(Opts{
+		Dir:        dir,
+		ShardCount: 8,
+		// Per-shard buffer sized to absorb a tight-loop burst (1M events /
+		// 8 shards = 125k per shard, doubled for safety). With drop-on-full
+		// Submit, undersized buffers would shed events faster than the
+		// shard goroutines drain them.
+		PerShardBuffer: 256 * 1024,
+		FlushInterval:  250 * time.Millisecond,
+		BatchSize:      4096,
+	})
 	require.NoError(t, err)
 
 	start := time.Now()
@@ -433,8 +447,54 @@ func TestPerformance1MEvents(t *testing.T) {
 	} else {
 		t.Logf("race detector enabled — perf gate relaxed; took %v", elapsed)
 	}
-	assert.Equal(t, int64(0), c.Dropped())
+	assert.Equal(t, int64(0), c.Dropped(), "no events should be dropped after Stop in this test")
+	assert.Equal(t, int64(0), c.EventsDroppedFull(), "no events should be dropped due to back-pressure with sized buffers")
 
 	got := countParquetRows(t, dir)
 	assert.Equal(t, int64(want), got)
+}
+
+// TestSubmit_DropOnFull_PreservesMeasurementIntegrity verifies the
+// measurement-integrity contract: when the shard channel saturates,
+// Submit drops events (does NOT block) and the drop is reported in
+// the integrity counters and the summary.
+//
+// This is the dual of TestPerformance1MEvents — same workload but with
+// an artificially small buffer so back-pressure is guaranteed.
+func TestSubmit_DropOnFull_PreservesMeasurementIntegrity(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(Opts{
+		Dir:            dir,
+		ShardCount:     1,
+		PerShardBuffer: 4, // tiny: forces drops on tight-loop submit
+		FlushInterval:  500 * time.Millisecond,
+		BatchSize:      2,
+	})
+	require.NoError(t, err)
+
+	const total = 5_000
+	for i := 0; i < total; i++ {
+		c.Submit(makeEvent(uint32(i+1), events.CategorySubscriberLifecycle, events.EventTypeStateChanged, "auth_sent"))
+	}
+
+	require.NoError(t, c.Stop(context.Background()))
+
+	// We expect a substantial fraction to be dropped given the buffer is
+	// 4 events deep against 5000 submissions.
+	dropped := c.EventsDroppedFull()
+	assert.Greater(t, dropped, int64(0), "tight-loop submit with tiny buffer must drop")
+	assert.Equal(t, int64(total), c.TotalSubmitted()+dropped,
+		"submitted + dropped should account for every Submit call")
+
+	// Integrity report should reflect the drops with low/medium trust.
+	sum, err := c.Aggregate(AggregateOpts{RunID: "drop-test"})
+	require.NoError(t, err)
+	require.NotNil(t, sum)
+
+	mi := sum.MeasurementIntegrity
+	assert.Contains(t, []string{"low", "medium"}, mi.Trust,
+		"trust must downgrade when drops occur")
+	assert.Equal(t, dropped, mi.EventsDroppedBackPressure)
+	assert.NotNil(t, mi.FirstDropOffsetMs)
+	assert.NotNil(t, mi.LastDropOffsetMs)
 }

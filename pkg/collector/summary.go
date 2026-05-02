@@ -139,6 +139,31 @@ type ArtifactsSection struct {
 	RunLog             string `json:"run_log"`
 }
 
+// MeasurementIntegritySection reports signals that a reader of summary.json
+// can use to decide how much to trust the latency aggregations.
+//
+// Trust value semantics:
+//   - "high"   : 0 events dropped due to back-pressure. Numbers are reliable.
+//   - "medium" : <1% of submitted events dropped. Numbers are usable but
+//     latency tail percentiles may be slightly understated
+//     (dropped events tend to be the rare slow ones).
+//   - "low"    : ≥1% dropped. Treat tail percentiles with significant care;
+//     consider re-running with a faster output disk, more cores,
+//     or a smaller subscriber count.
+//
+// "Notes" is a short freeform list of human-readable caveats that apply
+// to this run (e.g. measurement-floor reminders).
+type MeasurementIntegritySection struct {
+	Trust                       string   `json:"trust"`
+	EventsSubmitted             int64    `json:"events_submitted"`
+	EventsDroppedBackPressure   int64    `json:"events_dropped_back_pressure"`
+	OutcomesDroppedBackPressure int64    `json:"outcomes_dropped_back_pressure"`
+	EventsDroppedAfterStop      int64    `json:"events_dropped_after_stop"`
+	FirstDropOffsetMs           *int64   `json:"first_drop_offset_ms,omitempty"`
+	LastDropOffsetMs            *int64   `json:"last_drop_offset_ms,omitempty"`
+	Notes                       []string `json:"notes,omitempty"`
+}
+
 // Summary is the root type that marshals to summary.json.
 type Summary struct {
 	RunID        string    `json:"run_id"`
@@ -149,12 +174,13 @@ type Summary struct {
 	ScenarioType string    `json:"scenario_type"`
 	Outcome      string    `json:"outcome"`
 
-	Subscribers   SubscribersSection   `json:"subscribers"`
-	Establishment EstablishmentSection `json:"establishment"`
-	Retransmits   RetransmitsSection   `json:"retransmits"`
-	CoA           CoASection           `json:"coa"`
-	Disconnect    DisconnectSection    `json:"disconnect"`
-	ServerHealth  ServerHealthSection  `json:"server_health"`
-	Thresholds    ThresholdsSection    `json:"thresholds"`
-	Artifacts     ArtifactsSection     `json:"artifacts"`
+	Subscribers          SubscribersSection          `json:"subscribers"`
+	Establishment        EstablishmentSection        `json:"establishment"`
+	Retransmits          RetransmitsSection          `json:"retransmits"`
+	CoA                  CoASection                  `json:"coa"`
+	Disconnect           DisconnectSection           `json:"disconnect"`
+	ServerHealth         ServerHealthSection         `json:"server_health"`
+	Thresholds           ThresholdsSection           `json:"thresholds"`
+	Artifacts            ArtifactsSection            `json:"artifacts"`
+	MeasurementIntegrity MeasurementIntegritySection `json:"measurement_integrity"`
 }

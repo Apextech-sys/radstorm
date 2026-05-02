@@ -431,6 +431,7 @@ func (c *Collector) Aggregate(opts AggregateOpts) (*Summary, error) {
 			SubscribersParquet: filepath.Base(c.outcomeWrite.path),
 			RunLog:             "run.log",
 		},
+		MeasurementIntegrity: c.measurementIntegrity(opts.StartedAt),
 	}
 
 	// Suppress nil slices in JSON (the contract shows []).
@@ -442,6 +443,65 @@ func (c *Collector) Aggregate(opts AggregateOpts) (*Summary, error) {
 	}
 
 	return sum, nil
+}
+
+// measurementIntegrity converts the collector's atomic counters into the
+// summary section. Trust heuristic: 0 drops → high; <1% → medium; ≥1% → low.
+//
+// We deliberately keep the heuristic simple: an operator who sees "medium"
+// or "low" should look at the raw counts and decide for themselves. The
+// label is a hint, not a verdict.
+func (c *Collector) measurementIntegrity(startedAt time.Time) MeasurementIntegritySection {
+	submitted := c.totalSubmitted.Load()
+	droppedFull := c.eventsDroppedFull.Load()
+	droppedOutcomes := c.outcomesDroppedFull.Load()
+	droppedAfterStop := c.dropped.Load()
+	first := c.firstFullDropNs.Load()
+	last := c.lastFullDropNs.Load()
+
+	notes := []string{
+		"Latency captured with monotonic clock immediately on packet receipt.",
+		"Userspace timestamps via Go net.UDPConn — kernel scheduling jitter floor ≈50–200µs on a clean Linux box.",
+	}
+
+	trust := "high"
+	if droppedFull > 0 || droppedOutcomes > 0 {
+		// Compute drop rate over (successful + dropped) submission attempts.
+		denom := submitted + droppedFull
+		var rate float64
+		if denom > 0 {
+			rate = float64(droppedFull) / float64(denom)
+		}
+		if rate >= 0.01 {
+			trust = "low"
+			notes = append(notes,
+				"Collector saturated: ≥1% of events dropped due to back-pressure. Latency tail percentiles should be treated with significant care; consider faster output disk, more CPU cores, or a smaller subscriber count.",
+			)
+		} else {
+			trust = "medium"
+			notes = append(notes,
+				"Collector experienced brief back-pressure: a small number of events dropped. Latency aggregations are usable but tail percentiles may be slightly understated.",
+			)
+		}
+	}
+
+	out := MeasurementIntegritySection{
+		Trust:                       trust,
+		EventsSubmitted:             submitted,
+		EventsDroppedBackPressure:   droppedFull,
+		OutcomesDroppedBackPressure: droppedOutcomes,
+		EventsDroppedAfterStop:      droppedAfterStop,
+		Notes:                       notes,
+	}
+	if first > 0 {
+		off := time.Unix(0, first).Sub(startedAt).Milliseconds()
+		out.FirstDropOffsetMs = &off
+	}
+	if last > 0 {
+		off := time.Unix(0, last).Sub(startedAt).Milliseconds()
+		out.LastDropOffsetMs = &off
+	}
+	return out
 }
 
 // WriteSummary writes summary.json + summary.txt to the collector's

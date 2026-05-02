@@ -15,8 +15,9 @@ Audience: operator who has completed a run and wants to understand what the numb
 5. [CoA latency interpretation](#5-coa-latency-interpretation)
 6. [server_health.unresponsive_periods](#6-server_healthunresponsive_periods)
 7. [Threshold rollup interpretation](#7-threshold-rollup-interpretation)
-8. [DuckDB: querying subscribers.parquet](#8-duckdb-querying-subscribersparquet)
-9. [DuckDB: querying events.parquet shards](#9-duckdb-querying-eventsparquet-shards)
+8. **[Measurement integrity — read this BEFORE trusting any number above](#8-measurement-integrity)**
+9. [DuckDB: querying subscribers.parquet](#9-duckdb-querying-subscribersparquet)
+10. [DuckDB: querying events.parquet shards](#10-duckdb-querying-eventsparquet-shards)
 
 ---
 
@@ -276,7 +277,55 @@ The `actual` field shows the measured value. Use it to understand how much margi
 
 ---
 
-## 8. DuckDB: querying subscribers.parquet
+## 8. Measurement integrity
+
+`summary.json` includes a `measurement_integrity` block. **Check it first.** If it says `trust: low`, the establishment latency p99 / p99.9 above are unreliable — you're looking at a partial event stream and the slow tail probably got dropped during a flush burst.
+
+```json
+"measurement_integrity": {
+  "trust": "high",
+  "events_submitted": 8742342,
+  "events_dropped_back_pressure": 0,
+  "outcomes_dropped_back_pressure": 0,
+  "events_dropped_after_stop": 0,
+  "first_drop_offset_ms": null,
+  "last_drop_offset_ms": null,
+  "notes": [
+    "Latency captured with monotonic clock immediately on packet receipt.",
+    "Userspace timestamps via Go net.UDPConn — kernel scheduling jitter floor ≈50–200µs on a clean Linux box."
+  ]
+}
+```
+
+### Trust labels
+
+| Trust | Meaning | Action |
+|---|---|---|
+| `high` | 0 events dropped due to back-pressure. | Numbers reliable to the userspace-timestamp floor (~50–200µs). Proceed. |
+| `medium` | <1% of submitted events dropped. | Numbers usable; tail percentiles may be slightly understated. Note in your report. |
+| `low` | ≥1% dropped. | **Do not trust the latency tail.** Re-run with mitigations (below) before sharing results. |
+
+### What causes drops?
+
+- **Slow output disk.** Parquet writes happen on the collector goroutines. A slow disk stalls the writer; channel fills; Submit drops. Use a local NVMe at Tier 3 — network-attached storage is documented as not viable.
+- **Insufficient cores.** The collector creates one shard per CPU core. Fewer cores means fewer parallel writers, which means each one bottlenecks sooner.
+- **Subscriber count exceeds host capacity for the chosen scenario.** A pessimal-burst scenario at 1M on a Tier-2 box will saturate the collector. Move to Tier-3 hardware or a less aggressive scenario.
+
+### Why drop-on-full and not block-on-full
+
+The collector deliberately drops events when its channels are full rather than blocking the submitter. Blocking would back-pressure the receiver/sender goroutines, which would skew the latency measurements of subsequent packets — silently. Dropping events is loud (visible in the integrity block); skewing measurements is quiet (the numbers look fine but are wrong). We chose loud over quiet.
+
+### The measurement floor
+
+Even with `trust: high`, there is a noise floor on every measurement. radstorm uses Go's standard `net.UDPConn` for I/O, which gives userspace timestamps — captured by the kernel after packet arrival, then passed up to Go. The combined kernel scheduling jitter + Go runtime delivery typically caps measurement precision at **50–200µs** on a clean Linux box. On a busy machine (high load average, GC pressure, host-shared with other tenants) it can be worse.
+
+Practical implication: do not use radstorm to defend or refute claims at sub-millisecond precision. If a vendor claims "p99 auth latency under 100µs," this tool cannot reliably verify or falsify that — the noise floor swamps the signal. For everything at ms-scale and above, the tool is fit for purpose.
+
+A future hardware-timestamping mode (using `SO_TIMESTAMPING` on capable NICs) would lower this floor to ~ns precision; not implemented today. See [`docs/decisions/0004-hardware-timestamping.md`](decisions/0004-hardware-timestamping.md) for the design discussion.
+
+---
+
+## 9. DuckDB: querying subscribers.parquet
 
 `subscribers.parquet` contains one row per virtual subscriber with their final outcome and latency. It is the most useful file for per-subscriber analysis.
 
@@ -336,7 +385,7 @@ ORDER BY n DESC;
 
 ---
 
-## 9. DuckDB: querying events.parquet shards
+## 10. DuckDB: querying events.parquet shards
 
 `events-shard-*.parquet` contain one row per packet event. There may be many shards (one per CPU core). DuckDB handles glob patterns, so you do not need to merge them.
 
