@@ -1,55 +1,167 @@
-# radstorm — RADIUS Stress Tester
+# radstorm
 
-**Status:** Under active development. See [`.orchestration/STATE.md`](.orchestration/STATE.md) for current build state.
+[![CI](https://github.com/Apextech-sys/reflex-radstorm/actions/workflows/ci.yml/badge.svg)](https://github.com/Apextech-sys/reflex-radstorm/actions/workflows/ci.yml)
 
-A protocol-level stress test harness for RADIUS servers serving ISP scale (~1M PPPoE/MAC subscribers). Built to validate FreeRADIUS and Interstellar candidates against realistic outage-recovery and CoA-storm scenarios.
+radstorm is a protocol-level RADIUS stress tester for ISP-scale subscriber environments. It simulates up to 1M virtual PPPoE/MAC subscribers, drives full authentication and accounting flows against a target RADIUS server, and produces sharded Parquet event logs plus a structured `summary.json` for analysis.
 
-## What it does
+Validated end-to-end: 100 subscribers in under 6 seconds against Dockerized FreeRADIUS, with p50=10ms and p99=35ms establishment latency, sharded Parquet output, and a live frontend dashboard.
 
-Simulates large numbers of virtual subscribers, each independently progressing through full RADIUS authentication + accounting establishment against a target RADIUS server. Records per-subscriber timing and outcome data, plus a server-initiated CoA/Disconnect listener for change-of-authorization storm testing.
+---
 
-## Components
+## First-time user
 
-- **`apps/cli/`** — Go CLI binary (`radstorm`) — runs scenarios, emits Parquet/JSON results
-- **`apps/api/`** — Go HTTP API server (`radstorm-api`) — wraps the CLI for the frontend
-- **`apps/web/`** — Next.js frontend — scenario configuration, run trigger, results dashboard
-- **`pkg/`** — Shared Go packages (radius, config, subscriber, io, scenario, collector, server)
-- **`test/docker/freeradius/`** — Dockerized FreeRADIUS test rig for local end-to-end validation
+**[Start here: docs/QUICKSTART.md](docs/QUICKSTART.md)**
+
+Five minutes from clone to first successful run. Assumes Docker Desktop is installed.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐   REST/SSE   ┌──────────────────────┐  spawn  ┌──────────────────────┐
+│  Next.js frontend    │◀────────────▶│  Go HTTP API server   │────────▶│  Go CLI (radstorm)    │
+│  (apps/web)          │              │  (apps/api)           │         │  (apps/cli)           │
+│  - config form       │              │  - run lifecycle       │         │  - scenario driver    │
+│  - live progress     │              │  - SSE progress stream │         │  - subscriber pool    │
+│  - results dashboard │              │  - SQLite run store    │         │  - UDP I/O + collector│
+└─────────────────────┘              └──────────────────────┘         └──────────┬───────────┘
+                                                                                  │ UDP RADIUS
+                                                                                  ▼
+                                                                       ┌──────────────────────┐
+                                                                       │  RADIUS server under  │
+                                                                       │  test (FreeRADIUS,    │
+                                                                       │  Interstellar, etc.)  │
+                                                                       └──────────────────────┘
+```
+
+The CLI is the test engine. The API server is a thin process supervisor. The frontend is configuration and visualization. The CLI runs standalone — no API or frontend required.
+
+---
+
+## Component map
+
+| Component | Location | Description |
+|---|---|---|
+| CLI | `apps/cli/cmd/radstorm` | `run-scenario`, `validate-config`, `single-auth`, `analyze-results` subcommands |
+| API server | `apps/api/cmd/radstorm-api` | REST + SSE wrapper around the CLI; SQLite run store |
+| Frontend | `apps/web` | Next.js config form, live run progress, results dashboard |
+| `pkg/radius` | `pkg/radius` | Hand-rolled RFC 2865/2866/5176 packet layer; Huawei VSA support |
+| `pkg/config` | `pkg/config` | TOML loader, validator, credentials CSV parser |
+| `pkg/io` | `pkg/io` | UDP socket pool, 8-bit ID bitmap allocator, reply matcher, sender with retransmit |
+| `pkg/subscriber` | `pkg/subscriber` | Per-subscriber FSM (`idle → auth_sent → established → terminated`) |
+| `pkg/server` | `pkg/server` | CoA/Disconnect UDP listener (RFC 5176); ACK/NAK with latency recording |
+| `pkg/scenario` | `pkg/scenario` | Scenario driver: Gaussian/uniform/pessimal activation schedules |
+| `pkg/collector` | `pkg/collector` | Sharded event channels, Parquet flush, summary aggregation |
+| `pkg/events` | `pkg/events` | Shared event struct + Parquet schema |
+
+---
 
 ## Quick start
 
 ```bash
-# Bring up the local FreeRADIUS test rig
-docker compose -f test/docker/docker-compose.yml up -d
-
-# Build the CLI and API
+# Clone and build
+git clone https://github.com/Apextech-sys/reflex-radstorm.git
+cd reflex-radstorm
 make build
 
-# Run a small smoke test (1k subscribers against the local FreeRADIUS)
-./bin/radstorm run-scenario --config test/fixtures/scenarios/smoke-1k.toml
+# Start the Docker FreeRADIUS rig
+make docker-up
 
-# Or via the web UI
-make dev   # starts API + Next.js dev server
-# Open http://localhost:3000
+# Run 100 subscribers
+./bin/radstorm run-scenario \
+  --config test/fixtures/scenarios/smoke-100.toml \
+  --out results/smoke-100
+
+# Inspect results
+./bin/radstorm analyze-results results/smoke-100
+jq '.establishment.latency_ms' results/smoke-100/summary.json
 ```
+
+Or with the web UI:
+
+```bash
+make dev       # starts API on :8080 and Next.js on :3000
+# Open http://localhost:3000 → New Run
+```
+
+---
+
+## Running the E2E suite
+
+The E2E suite runs the full stack against the Docker FreeRADIUS rig and asserts outcome, latency, and Parquet output.
+
+```bash
+# Runs: make docker-up, make build, bash test/e2e/run.sh, make docker-down
+make e2e
+```
+
+Exit codes: `0` = all pass, `1` = assertion failures, `2` = binary not built, `3` = prereqs missing.
+
+See [`test/e2e/README.md`](test/e2e/README.md) for individual scenario execution and fixture details.
+
+---
+
+## Repo layout
+
+```
+/
+  apps/
+    cli/             CLI entry point (radstorm binary)
+    api/             HTTP API server (radstorm-api binary)
+    web/             Next.js frontend
+  pkg/
+    radius/          RADIUS protocol layer
+    config/          Configuration loading + validation
+    io/              UDP I/O: socket pool, ID allocator, sender, receiver
+    subscriber/      Subscriber FSM and pool
+    server/          CoA/Disconnect listener
+    scenario/        Scenario driver and activation schedules
+    collector/       Event collection and Parquet output
+    events/          Shared event types
+  test/
+    docker/          Docker FreeRADIUS test rig
+    e2e/             End-to-end test scripts
+    fixtures/        Scenario configs and credential CSVs
+  docs/
+    ARCHITECTURE.md  System architecture
+    PROTOCOL.md      RADIUS protocol reference
+    CONFIG.md        Configuration schema reference
+    RUNBOOK.md       Operator runbook
+    QUICKSTART.md    5-minute getting-started guide
+    TROUBLESHOOTING.md  Common issues and fixes
+    CONVENTIONS.md   Code and documentation standards
+    decisions/       Architecture Decision Records
+  .github/
+    workflows/       CI pipeline (Go tests, frontend tests, E2E)
+  .orchestration/    Build orchestration state (internal)
+  Makefile
+```
+
+---
 
 ## Documentation
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system architecture
-- [`docs/PROTOCOL.md`](docs/PROTOCOL.md) — RADIUS protocol reference, Huawei VSA notes
-- [`docs/CONFIG.md`](docs/CONFIG.md) — scenario configuration schema
-- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — operator runbook
-- [`docs/decisions/`](docs/decisions/) — Architecture Decision Records
+| Document | Purpose |
+|---|---|
+| [docs/QUICKSTART.md](docs/QUICKSTART.md) | 5-minute getting-started guide |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Full operator runbook |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md) | RADIUS protocol reference |
+| [docs/CONFIG.md](docs/CONFIG.md) | Configuration schema |
+| [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code and documentation conventions |
+| [docs/decisions/](docs/decisions/) | Architecture Decision Records |
+
+---
 
 ## Project conventions
 
-Every code file in this repo MUST start with a header comment block that explains:
-- **Purpose:** what this file does in 1–2 lines
-- **Related files:** other files a reader needs to understand context
-- **Briefing:** path to the briefing doc that drove this file's creation
-- **Contract:** what externally-visible contracts this file owns (API surface, schema, etc.)
+Every code file in this repo begins with a header comment block documenting its purpose, related files, briefing reference, and contract ownership. See [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
 
-This convention exists so any future contributor (human or agent) can understand any file in isolation. See [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md).
+The header convention exists so any contributor — human or agent — can understand any file in isolation.
+
+---
 
 ## License
 
