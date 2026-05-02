@@ -1,0 +1,278 @@
+# GitHub Actions release workflow for radstorm.
+#
+# Purpose:
+#   Triggered on semver tag push (e.g. v0.1.0). Builds radstorm and
+#   radstorm-api for five OS/arch combinations, packages the web frontend
+#   source as a tarball, generates SHA256 checksums for every artifact,
+#   and creates a GitHub Release with all binaries attached plus a
+#   changelog body derived from commits since the previous tag.
+#
+# Related:
+#   - .github/workflows/ci.yml (regular CI — run on every push/PR)
+#   - Makefile (build-cross, checksums targets mirror this logic)
+#   - apps/cli/cmd/radstorm/main.go (Version var set via ldflags)
+#   - apps/api/cmd/radstorm-api/version.go (Version var set via ldflags)
+#   - scripts/install.sh  (end-user Linux/macOS installer)
+#   - scripts/install.ps1 (end-user Windows installer)
+#
+# Briefing: .orchestration/briefings/wave-6-release-pipeline.md
+#
+# Contract:
+#   Trigger: git tag push matching v* (e.g. git tag v0.1.0 && git push --tags)
+#   Artifacts uploaded to GitHub Release:
+#     radstorm-{os}-{arch}[.exe]
+#     radstorm-api-{os}-{arch}[.exe]
+#     radstorm-web-static.tar.gz
+#     SHA256SUMS
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Only one release job at a time
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: "1.26.2"
+  NODE_VERSION: "24"
+
+jobs:
+  # ── Job 1: Build Go binaries (matrix across OS/arch) ────────────────────────
+  build-binaries:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: linux
+            goarch: arm64
+            suffix: ""
+          - goos: darwin
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: arm64
+            suffix: ""
+          - goos: windows
+            goarch: amd64
+            suffix: ".exe"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for git describe
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Resolve version string
+        id: ver
+        run: |
+          VERSION="$(git describe --tags --always --dirty)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build CLI binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist
+          go build \
+            -ldflags="-s -w -X main.Version=${{ steps.ver.outputs.version }}" \
+            -o "dist/radstorm-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}" \
+            ./apps/cli/cmd/radstorm
+
+      - name: Build API binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X main.Version=${{ steps.ver.outputs.version }}" \
+            -o "dist/radstorm-api-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}" \
+            ./apps/api/cmd/radstorm-api
+
+      - name: Upload binaries as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
+          retention-days: 1
+
+  # ── Job 2: Bundle the web frontend source ────────────────────────────────────
+  # The Next.js app uses SSE and runtime API calls, which makes a fully static
+  # export impractical without an adapter. We ship the source so operators can
+  # run `npm install && npm run dev` or deploy to Vercel/Netlify. The tarball
+  # excludes node_modules and .next output to keep it small.
+  build-web:
+    name: Bundle web frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Type-check and lint (gate before packaging)
+        working-directory: apps/web
+        run: |
+          npm run typecheck || npx tsc --noEmit
+          npm run lint
+
+      - name: Create web source tarball
+        run: |
+          mkdir -p dist
+          tar -czf dist/radstorm-web-static.tar.gz \
+            --exclude='apps/web/node_modules' \
+            --exclude='apps/web/.next' \
+            --exclude='apps/web/out' \
+            apps/web/
+          echo "Web bundle created: $(du -sh dist/radstorm-web-static.tar.gz | cut -f1)"
+
+      - name: Upload web bundle as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle
+          path: dist/radstorm-web-static.tar.gz
+          retention-days: 1
+
+  # ── Job 3: Assemble release artifacts, generate checksums, publish ───────────
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-binaries, build-web]
+
+    permissions:
+      contents: write   # required to create a GitHub Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          path: dist/
+          merge-multiple: true
+
+      - name: Download web bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-bundle
+          path: dist/
+
+      - name: Generate SHA256 checksums
+        working-directory: dist
+        run: |
+          sha256sum * > SHA256SUMS
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS
+
+      - name: Resolve version and build changelog
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          # Find the previous tag to build the commit list
+          PREV_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")"
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+            SINCE_MSG="Changes since ${PREV_TAG}"
+          else
+            RANGE="${TAG}"
+            SINCE_MSG="Initial release"
+          fi
+
+          # Build the release body
+          {
+            echo "## radstorm ${TAG}"
+            echo ""
+            echo "### ${SINCE_MSG}"
+            echo ""
+            git log --pretty=format:"- %s (%h)" "${RANGE}" 2>/dev/null | head -50 || echo "- Initial release"
+            echo ""
+            echo ""
+            echo "### Installation"
+            echo ""
+            echo '**Linux/macOS (one-liner):**'
+            echo '```bash'
+            echo 'curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash'
+            echo '```'
+            echo ""
+            echo "**Manual:** Download the binary for your platform below and verify with \`SHA256SUMS\`."
+            echo ""
+            echo "**Documentation:** See [docs/INSTALLATION.md](https://github.com/Apextech-sys/reflex-radstorm/blob/main/docs/INSTALLATION.md)"
+            echo ""
+            echo "### Supported platforms"
+            echo ""
+            echo "| Binary | Platform |"
+            echo "|--------|----------|"
+            echo "| \`radstorm-linux-amd64\` | Linux x86_64 |"
+            echo "| \`radstorm-linux-arm64\` | Linux ARM64 (e.g. AWS Graviton) |"
+            echo "| \`radstorm-darwin-amd64\` | macOS Intel |"
+            echo "| \`radstorm-darwin-arm64\` | macOS Apple Silicon |"
+            echo "| \`radstorm-windows-amd64.exe\` | Windows x86_64 |"
+            echo "| \`radstorm-web-static.tar.gz\` | Web frontend (source, all platforms) |"
+          } > /tmp/release-body.md
+
+          echo "Changelog generated."
+          cat /tmp/release-body.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          name: "radstorm ${{ steps.changelog.outputs.tag }}"
+          body_path: /tmp/release-body.md
+          draft: false
+          prerelease: ${{ contains(steps.changelog.outputs.tag, '-') }}
+          files: |
+            dist/radstorm-linux-amd64
+            dist/radstorm-linux-arm64
+            dist/radstorm-darwin-amd64
+            dist/radstorm-darwin-arm64
+            dist/radstorm-windows-amd64.exe
+            dist/radstorm-api-linux-amd64
+            dist/radstorm-api-linux-arm64
+            dist/radstorm-api-darwin-amd64
+            dist/radstorm-api-darwin-arm64
+            dist/radstorm-api-windows-amd64.exe
+            dist/radstorm-web-static.tar.gz
+            dist/SHA256SUMS

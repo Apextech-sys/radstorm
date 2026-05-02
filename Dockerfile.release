@@ -1,0 +1,94 @@
+# Dockerfile.release — production release image for radstorm-api + radstorm CLI.
+#
+# Purpose:
+#   Multi-stage build that compiles radstorm and radstorm-api from source in a
+#   Go builder stage, then copies the stripped binaries into a minimal Alpine
+#   final image. The resulting image runs the API server (radstorm-api) on
+#   port 8080 and includes the CLI binary at /usr/local/bin/radstorm so the
+#   API process can spawn it as a subprocess.
+#
+#   To use pre-built binaries from dist/ instead of building from source,
+#   comment out the builder stage and COPY from a local dist/ directory.
+#
+# Related:
+#   - apps/api/cmd/radstorm-api/main.go (entry point for the server)
+#   - apps/cli/cmd/radstorm/main.go     (CLI spawned by the API)
+#   - docs/INSTALLATION.md              (end-user documentation)
+#   - .github/workflows/release.yml    (CI/CD build pipeline)
+#
+# Briefing: .orchestration/briefings/wave-6-release-pipeline.md
+#
+# Contract:
+#   Exposes:   8080/tcp (HTTP API)
+#   Env vars:
+#     RADSTORM_API_ADDR   — bind address (default: :8080)
+#     RADSTORM_DATA_DIR   — data directory for SQLite + run output (default: /data)
+#     RADSTORM_CLI_BIN    — path to the CLI binary (set to /usr/local/bin/radstorm in image)
+#   Volume:    /data (mount a host directory here for persistence)
+#   User:      runs as non-root user "radstorm" (uid 1001)
+
+# ── Stage 1: builder ─────────────────────────────────────────────────────────
+FROM golang:1.26-alpine AS builder
+
+# Install git (required for go mod) and ca-certificates
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /src
+
+# Cache module downloads as a separate layer
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the full source
+COPY . .
+
+# Build version string from the VERSION build arg (injected by CI) or fall back to git describe
+ARG VERSION=dev
+RUN VERSION_STR="${VERSION}" && \
+    if [ "${VERSION_STR}" = "dev" ]; then \
+      VERSION_STR="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"; \
+    fi && \
+    echo "Building radstorm ${VERSION_STR}" && \
+    CGO_ENABLED=0 GOOS=linux go build \
+      -ldflags="-s -w -X main.Version=${VERSION_STR}" \
+      -o /out/radstorm \
+      ./apps/cli/cmd/radstorm && \
+    CGO_ENABLED=0 GOOS=linux go build \
+      -ldflags="-s -w -X main.Version=${VERSION_STR}" \
+      -o /out/radstorm-api \
+      ./apps/api/cmd/radstorm-api
+
+# ── Stage 2: final runtime image ─────────────────────────────────────────────
+FROM alpine:3.21
+
+# Install ca-certificates (needed for outbound HTTPS) and timezone data
+RUN apk add --no-cache ca-certificates tzdata && \
+    # Create a non-root user for the process
+    addgroup -g 1001 radstorm && \
+    adduser -u 1001 -G radstorm -s /bin/sh -D radstorm && \
+    # Create the default data directory with correct ownership
+    mkdir -p /data && chown radstorm:radstorm /data
+
+# Copy binaries from builder
+COPY --from=builder /out/radstorm     /usr/local/bin/radstorm
+COPY --from=builder /out/radstorm-api /usr/local/bin/radstorm-api
+
+# Environment defaults
+ENV RADSTORM_API_ADDR=":8080"
+ENV RADSTORM_DATA_DIR="/data"
+ENV RADSTORM_CLI_BIN="/usr/local/bin/radstorm"
+
+# Persistent data volume — mount a host path here for run output and SQLite DB
+VOLUME ["/data"]
+
+# HTTP API port
+EXPOSE 8080
+
+# Switch to non-root user
+USER radstorm
+
+# Health check — polls the /health endpoint every 30 seconds
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["/usr/local/bin/radstorm-api"]
