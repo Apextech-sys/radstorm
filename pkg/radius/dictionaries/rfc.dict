@@ -1,0 +1,37 @@
+# Standard RFC RADIUS dictionary subset — radstorm
+#
+# Purpose: Maps the standard RFC 2865/2866/2869/5176 attribute IDs that
+# radstorm emits or consumes to human-readable names. The dictionary
+# loader reads this file at init() time so logs and event records can
+# include attribute names rather than numeric IDs.
+#
+# Related: pkg/radius/dictionary.go, docs/PROTOCOL.md
+# Briefing: .orchestration/briefings/1a-radius-protocol.md
+# Contract: Names here appear in event logs; renaming a name will rename
+# the column in downstream Parquet/JSON output — coordinate with pkg/events.
+#
+# Format: ATTRIBUTE <name> <id> <type>
+#   type ∈ { string | integer | ipaddr | octets | date }
+
+ATTRIBUTE User-Name              1   string
+ATTRIBUTE User-Password          2   string
+ATTRIBUTE CHAP-Password          3   octets
+ATTRIBUTE NAS-IP-Address         4   ipaddr
+ATTRIBUTE NAS-Port               5   integer
+ATTRIBUTE Service-Type           6   integer
+ATTRIBUTE Framed-Protocol        7   integer
+ATTRIBUTE Framed-IP-Address      8   ipaddr
+ATTRIBUTE Reply-Message          18  string
+ATTRIBUTE Vendor-Specific        26  octets
+ATTRIBUTE Called-Station-Id      30  string
+ATTRIBUTE Calling-Station-Id     31  string
+ATTRIBUTE NAS-Identifier         32  string
+ATTRIBUTE Acct-Status-Type       40  integer
+ATTRIBUTE Acct-Session-Id        44  string
+ATTRIBUTE Acct-Authentic         45  integer
+ATTRIBUTE Acct-Session-Time      46  integer
+ATTRIBUTE CHAP-Challenge         60  octets
+ATTRIBUTE NAS-Port-Type          61  integer
+ATTRIBUTE Message-Authenticator  80  octets
+ATTRIBUTE NAS-Port-Id            87  string
+ATTRIBUTE Error-Cause            101 integer
