@@ -40,14 +40,14 @@ type VendorAttribute struct {
 // docs/PROTOCOL.md. Values are the Huawei-specific Vendor-Type byte (the
 // outer Type is always 26 = Vendor-Specific).
 const (
-	HuaweiInputPeakRate         uint8 = 1
-	HuaweiInputAverageRate      uint8 = 2
-	HuaweiInputBasicRate        uint8 = 3
-	HuaweiOutputPeakRate        uint8 = 5
-	HuaweiSubscriberQoSProfile  uint8 = 18
-	HuaweiConnectID             uint8 = 20
-	HuaweiAcctSessionID         uint8 = 26
-	HuaweiServiceType           uint8 = 65
+	HuaweiInputPeakRate        uint8 = 1
+	HuaweiInputAverageRate     uint8 = 2
+	HuaweiInputBasicRate       uint8 = 3
+	HuaweiOutputPeakRate       uint8 = 5
+	HuaweiSubscriberQoSProfile uint8 = 18
+	HuaweiConnectID            uint8 = 20
+	HuaweiAcctSessionID        uint8 = 26
+	HuaweiServiceType          uint8 = 65
 )
 
 // ErrInvalidVSA means the VSA payload is malformed (length too short or
