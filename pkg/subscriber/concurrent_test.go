@@ -41,19 +41,17 @@ func (s *slowSender) Send(ctx context.Context, dst net.Addr, build func(id uint8
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now()
+	start := time.Now()
 	select {
 	case <-time.After(s.delay):
 	case <-ctx.Done():
-		return &SendResult{Err: ctx.Err()}, nil
+		return nil, ctx.Err()
 	}
 	return &SendResult{
-		Reply:       &radius.Packet{Code: s.code, Identifier: pkt.Identifier},
-		ReplyBytes:  []byte{0x00},
-		FirstSentAt: now,
-		ReplyAt:     time.Now(),
-		LocalAddr:   fakeAddr{s: "127.0.0.1:0"},
-		RemoteAddr:  dst,
+		Reply:      &radius.Packet{Code: s.code, Identifier: pkt.Identifier},
+		LatencyUs:  time.Since(start).Microseconds(),
+		LocalAddr:  fakeAddr{s: "127.0.0.1:0"},
+		Identifier: pkt.Identifier,
 	}, nil
 }
 

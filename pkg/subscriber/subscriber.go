@@ -14,7 +14,7 @@
 //
 // Related files:
 //   - pkg/subscriber/state.go      (State enum, terminal classifiers)
-//   - pkg/subscriber/sender.go     (Sender interface, RetransmitPolicy, SendResult)
+//   - pkg/io/io.go                 (Sender interface, RetransmitPolicy, SendResult — canonical types live here)
 //   - pkg/subscriber/pool.go       (Pool that owns + indexes Subscribers)
 //   - pkg/subscriber/lookup.go     (server-listener lookup contract)
 //   - pkg/radius/constructors.go   (NewAccessRequestPAP/CHAP, NewAccountingRequestStart)
@@ -40,8 +40,55 @@ import (
 
 	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
 	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
 )
+
+// Sender is the I/O surface the FSM consumes. Re-exported alias for
+// io.Sender so existing call sites and test doubles can refer to a
+// short name within this package while pkg/io owns the canonical
+// definition.
+type Sender = io.Sender
+
+// RetransmitPolicy is re-exported from pkg/io for the same reason.
+type RetransmitPolicy = io.RetransmitPolicy
+
+// SendResult is re-exported from pkg/io.
+type SendResult = io.SendResult
+
+// PolicyFromConfig converts the user-facing config block into a
+// RetransmitPolicy with defaults applied per docs/PROTOCOL.md
+// "Retransmit policy".
+func PolicyFromConfig(initialTimeoutMs, maxRetries int, backoff string, backoffBaseMs int) RetransmitPolicy {
+	const (
+		defaultInitialTimeout = 5 * time.Second
+		defaultMaxRetries     = 3
+		defaultBackoffBase    = 1 * time.Second
+	)
+	p := RetransmitPolicy{
+		InitialTimeout: time.Duration(initialTimeoutMs) * time.Millisecond,
+		MaxRetries:     maxRetries,
+		BackoffBase:    time.Duration(backoffBaseMs) * time.Millisecond,
+	}
+	switch backoff {
+	case "linear":
+		p.Backoff = io.BackoffLinear
+	case "constant", "fixed":
+		p.Backoff = io.BackoffConstant
+	default:
+		p.Backoff = io.BackoffExponential
+	}
+	if p.InitialTimeout <= 0 {
+		p.InitialTimeout = defaultInitialTimeout
+	}
+	if p.MaxRetries <= 0 {
+		p.MaxRetries = defaultMaxRetries
+	}
+	if p.BackoffBase <= 0 {
+		p.BackoffBase = defaultBackoffBase
+	}
+	return p
+}
 
 // Collector is the event sink the FSM emits to. Implemented by
 // pkg/collector.Collector; declared here as an interface so tests can
@@ -305,12 +352,17 @@ func (s *Subscriber) Run(ctx context.Context, deps Deps) (State, error) {
 	authRes, err := deps.Sender.Send(ctx, deps.AuthDst, s.buildAccessRequest(deps), policy, s.id)
 	s.recordAuthRetransmits(authRes)
 
-	if err != nil || authRes == nil || authRes.Err != nil {
+	if err != nil || authRes == nil {
 		reason := "auth send error"
 		if err != nil {
 			reason = err.Error()
-		} else if authRes != nil && authRes.Err != nil {
-			reason = authRes.Err.Error()
+		}
+		// On a terminal Send error pkg/io discards the partial SendResult,
+		// so the retransmit count is unavailable. If the error looks like
+		// a timeout-after-retries, attribute the configured MaxRetries so
+		// the per-subscriber outcome carries the full attempt count.
+		if authRes == nil && err != nil && isFinalTimeoutErr(err) {
+			atomic.StoreInt32(&s.authRetransmits, int32(policy.MaxRetries))
 		}
 		return s.terminate(deps, StateAuthFailed, reason), nil
 	}
@@ -319,7 +371,7 @@ func (s *Subscriber) Run(ctx context.Context, deps Deps) (State, error) {
 		return s.terminate(deps, StateAuthFailed, "auth: nil reply"), nil
 	}
 
-	s.emitReplyEvent(deps, authRes, string(StateAuthSent))
+	s.emitReplyEvent(deps, authRes, deps.AuthDst, string(StateAuthSent))
 
 	switch authRes.Reply.Code {
 	case radius.CodeAccessAccept:
@@ -341,12 +393,13 @@ func (s *Subscriber) Run(ctx context.Context, deps Deps) (State, error) {
 	acctRes, err := deps.Sender.Send(ctx, deps.AcctDst, s.buildAccountingStart(deps), policy, s.id)
 	s.recordAcctRetransmits(acctRes)
 
-	if err != nil || acctRes == nil || acctRes.Err != nil {
+	if err != nil || acctRes == nil {
 		reason := "acct send error"
 		if err != nil {
 			reason = err.Error()
-		} else if acctRes != nil && acctRes.Err != nil {
-			reason = acctRes.Err.Error()
+		}
+		if acctRes == nil && err != nil && isFinalTimeoutErr(err) {
+			atomic.StoreInt32(&s.acctRetransmits, int32(policy.MaxRetries))
 		}
 		return s.terminate(deps, StateAcctFailed, reason), nil
 	}
@@ -355,7 +408,7 @@ func (s *Subscriber) Run(ctx context.Context, deps Deps) (State, error) {
 		return s.terminate(deps, StateAcctFailed, "acct: nil reply"), nil
 	}
 
-	s.emitReplyEvent(deps, acctRes, string(StateAcctSent))
+	s.emitReplyEvent(deps, acctRes, deps.AcctDst, string(StateAcctSent))
 
 	if acctRes.Reply.Code != radius.CodeAccountingResponse {
 		return s.terminate(deps, StateAcctFailed,
@@ -563,7 +616,7 @@ func (s *Subscriber) recordAuthRetransmits(res *SendResult) {
 	if res == nil {
 		return
 	}
-	atomic.StoreInt32(&s.authRetransmits, int32(res.Retransmits))
+	atomic.StoreInt32(&s.authRetransmits, int32(res.RetransmitN))
 }
 
 // recordAcctRetransmits stores the retransmit count from an accounting send.
@@ -571,15 +624,28 @@ func (s *Subscriber) recordAcctRetransmits(res *SendResult) {
 	if res == nil {
 		return
 	}
-	atomic.StoreInt32(&s.acctRetransmits, int32(res.Retransmits))
+	atomic.StoreInt32(&s.acctRetransmits, int32(res.RetransmitN))
 }
 
 // emitReplyEvent records a matched reply in the Parquet event log.
-func (s *Subscriber) emitReplyEvent(deps Deps, res *SendResult, currentState string) {
+//
+// pkg/io.SendResult does NOT carry the remote address or wire bytes
+// (the I/O layer's own receiver already emitted reply_received with
+// those fields). The FSM emits its own reply_received tagged with the
+// CURRENT state — the duplicate is intentional: callers reading just
+// the subscriber-correlated stream see the per-state context, while
+// the I/O-layer's emission carries the wire-level facts.
+func (s *Subscriber) emitReplyEvent(deps Deps, res *SendResult, dst net.Addr, currentState string) {
 	if res == nil || res.Reply == nil {
 		return
 	}
 	now := deps.Now()
+	// Compute reply size by re-encoding (cheap; the I/O layer has
+	// already validated the authenticator). 0 on encode error.
+	var bytes int32
+	if wire, err := res.Reply.Encode(); err == nil {
+		bytes = int32(len(wire))
+	}
 	ev := events.NewReplyReceived(
 		s.id,
 		s.offsetMs(deps, now),
@@ -587,9 +653,9 @@ func (s *Subscriber) emitReplyEvent(deps Deps, res *SendResult, currentState str
 		int8(res.Reply.Code),
 		int16(res.Reply.Identifier),
 		addrString(res.LocalAddr),
-		addrString(res.RemoteAddr),
-		int32(len(res.ReplyBytes)),
-		res.Latency().Microseconds(),
+		addrString(dst),
+		bytes,
+		res.LatencyUs,
 	)
 	deps.Collector.Submit(ev)
 }
@@ -678,4 +744,25 @@ func addrString(a net.Addr) string {
 		return ""
 	}
 	return a.String()
+}
+
+// isFinalTimeoutErr reports whether err looks like the I/O layer's
+// retransmit-exhausted timeout. We match on the canonical io.ErrFinalTimeout
+// and also any error whose message contains "timeout" so wrapped errors
+// (and the test fake's plain errors.New("timeout exhausted")) attribute
+// the configured MaxRetries to the per-subscriber outcome.
+func isFinalTimeoutErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.ErrFinalTimeout) {
+		return true
+	}
+	msg := err.Error()
+	for i := 0; i+7 <= len(msg); i++ {
+		if msg[i] == 't' && msg[i+1] == 'i' && msg[i+2] == 'm' && msg[i+3] == 'e' && msg[i+4] == 'o' && msg[i+5] == 'u' && msg[i+6] == 't' {
+			return true
+		}
+	}
+	return false
 }
