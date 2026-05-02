@@ -8,7 +8,7 @@
 //
 // Related files:
 //   - pkg/subscriber/subscriber.go (Run consumes Sender + Collector)
-//   - pkg/subscriber/sender.go     (interface + RetransmitPolicy + SendResult)
+//   - pkg/io/io.go                 (canonical Sender / RetransmitPolicy / SendResult)
 //
 // Briefing: .orchestration/briefings/2b-subscriber.md
 //
@@ -33,24 +33,29 @@ func (f fakeAddr) Network() string { return "udp" }
 func (f fakeAddr) String() string  { return f.s }
 
 // scriptedReply describes a single fake send outcome.
+//
+// io.SendResult does not carry an in-band Err field — terminal errors
+// are returned as the second value of Send. err here therefore always
+// becomes the returned error and (nil, err) is the response.
 type scriptedReply struct {
 	// replyCode is the RADIUS code in the synthetic reply (Access-Accept,
 	// Access-Reject, Accounting-Response). Zero means "no reply" (the
-	// sender returns Err instead).
+	// sender returns err instead).
 	replyCode radius.Code
 
-	// retransmits is reported back in SendResult.Retransmits.
+	// retransmits is reported back in SendResult.RetransmitN.
 	retransmits int
 
-	// err is the terminal error to put on SendResult.Err (and to also
-	// return as the function's error value when wantHardErr is true).
+	// err is returned as Send's error value (paired with a nil result).
+	// Retained for readability with the previous wantHardErr flag.
 	err error
 
-	// wantHardErr makes Send return (nil, err) instead of (&SendResult{Err: err}, nil).
+	// wantHardErr is retained for back-compat with existing tests; it has
+	// no effect now (any non-nil err always returns (nil, err)).
 	wantHardErr bool
 
-	// latency is reported as ReplyAt - FirstSentAt; useful for
-	// emitReplyEvent assertions.
+	// latency is reported as SendResult.LatencyUs (microseconds), useful
+	// for emitReplyEvent assertions.
 	latency time.Duration
 }
 
@@ -91,33 +96,24 @@ func (f *fakeSender) Send(ctx context.Context, dst net.Addr, build func(id uint8
 
 	f.calls = append(f.calls, sendCall{dst: dst, policy: policy, subID: subID, built: pkt})
 
-	if script.wantHardErr {
+	if script.err != nil {
 		return nil, script.err
 	}
 
-	now := time.Now()
 	res := &SendResult{
-		Retransmits: script.retransmits,
+		RetransmitN: script.retransmits,
 		LocalAddr:   fakeAddr{s: "127.0.0.1:0"},
-		RemoteAddr:  dst,
-		FirstSentAt: now,
-		ReplyAt:     now.Add(script.latency),
-	}
-
-	if script.err != nil {
-		res.Err = script.err
-		return res, nil
+		LatencyUs:   script.latency.Microseconds(),
+		Identifier:  pkt.Identifier,
 	}
 
 	if script.replyCode != 0 {
 		// Use the FSM-built request's identifier so the event log
 		// correlates request and reply.
-		reply := &radius.Packet{
+		res.Reply = &radius.Packet{
 			Code:       script.replyCode,
 			Identifier: pkt.Identifier,
 		}
-		res.Reply = reply
-		res.ReplyBytes = []byte{0xde, 0xad, 0xbe, 0xef} // arbitrary
 	}
 	return res, nil
 }

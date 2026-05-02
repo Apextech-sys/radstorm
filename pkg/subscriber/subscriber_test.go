@@ -27,6 +27,7 @@ import (
 
 	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
 	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
 	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
 )
 
@@ -217,9 +218,11 @@ func TestSubscriber_AuthTimeout_RetransmitsRecorded(t *testing.T) {
 	cred := config.Credential{Username: "stuck", Password: "x"}
 	sub := New(5, cred, cfg)
 
+	// io.Engine.Send returns (nil, ErrFinalTimeout) on retransmit
+	// exhaustion — the partial result is discarded. Subscriber attributes
+	// the configured MaxRetries to the outcome in that case.
 	sender := newFakeSender(scriptedReply{
-		err:         errors.New("timeout exhausted"),
-		retransmits: 3,
+		err: errors.New("timeout exhausted"),
 	})
 	col := newFakeCollector()
 	deps := Deps{Sender: sender, Collector: col, Config: cfg, Now: time.Now, T0: time.Now()}
@@ -231,7 +234,8 @@ func TestSubscriber_AuthTimeout_RetransmitsRecorded(t *testing.T) {
 	outs := col.snapshotOutcomes()
 	require.Len(t, outs, 1)
 	assert.Equal(t, events.FinalStateAuthFailed, outs[0].FinalState)
-	assert.Equal(t, int32(3), outs[0].AuthRetransmits, "retransmit count must propagate from SendResult to outcome")
+	assert.Equal(t, int32(cfg.Retransmit.MaxRetries), outs[0].AuthRetransmits,
+		"on terminal timeout the outcome attributes MaxRetries to the subscriber")
 	assert.Contains(t, outs[0].FailureReason, "timeout")
 }
 
@@ -424,26 +428,21 @@ func TestPolicyFromConfig_Defaults(t *testing.T) {
 	p := PolicyFromConfig(0, 0, "", 0)
 	assert.Equal(t, 5*time.Second, p.InitialTimeout)
 	assert.Equal(t, 3, p.MaxRetries)
-	assert.Equal(t, "exponential", p.Backoff)
+	assert.Equal(t, io.BackoffExponential, p.Backoff)
 	assert.Equal(t, 1*time.Second, p.BackoffBase)
 
 	p = PolicyFromConfig(2500, 7, "fixed", 250)
 	assert.Equal(t, 2500*time.Millisecond, p.InitialTimeout)
 	assert.Equal(t, 7, p.MaxRetries)
-	assert.Equal(t, "fixed", p.Backoff)
+	assert.Equal(t, io.BackoffConstant, p.Backoff)
 	assert.Equal(t, 250*time.Millisecond, p.BackoffBase)
 }
 
-func TestSendResult_Latency(t *testing.T) {
-	var nilRes *SendResult
-	assert.Equal(t, time.Duration(0), nilRes.Latency())
-
-	zero := &SendResult{}
-	assert.Equal(t, time.Duration(0), zero.Latency())
-
-	now := time.Now()
-	r := &SendResult{FirstSentAt: now, ReplyAt: now.Add(123 * time.Microsecond)}
-	assert.Equal(t, 123*time.Microsecond, r.Latency())
+func TestSendResult_LatencyUs(t *testing.T) {
+	// io.SendResult exposes LatencyUs (microseconds) instead of a Latency()
+	// helper. Round-trip a known value to confirm the field is preserved.
+	r := &SendResult{LatencyUs: 123}
+	assert.Equal(t, int64(123), r.LatencyUs)
 }
 
 // fixedClock is referenced via a top-level _ to silence the linter

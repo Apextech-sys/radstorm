@@ -289,6 +289,18 @@ func (e *Engine) LocalAddrs() []*net.UDPAddr {
 	return e.pool.LocalAddrs()
 }
 
+// Sender is the duck-typed I/O surface consumed by pkg/subscriber. The
+// Engine satisfies it; tests substitute fakes. Defined on pkg/io so the
+// canonical retransmit-policy / result types live with the implementation.
+//
+// build is a closure invoked once per transmission attempt with a fresh
+// Identifier (per RFC 2865 §3 — fresh ID + authenticator on every
+// retransmit). subID is forwarded into emitted Events purely for
+// correlation; it is NOT serialised on the wire.
+type Sender interface {
+	Send(ctx context.Context, dst net.Addr, build func(id uint8) (*radius.Packet, error), policy RetransmitPolicy, subID uint32) (*SendResult, error)
+}
+
 // Send is the public sender. dst is the destination RADIUS server. build
 // is a closure invoked once per transmission attempt (each attempt gets a
 // new Identifier per RFC). policy controls retransmit behaviour. subID is
