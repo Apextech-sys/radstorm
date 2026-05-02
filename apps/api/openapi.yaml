@@ -1,0 +1,498 @@
+# OpenAPI 3.1 spec for the radstorm HTTP API.
+#
+# Purpose:
+#   Describes every endpoint defined in .orchestration/contracts/rest-api.md.
+#   The Wave 1 API skeleton mocks several handlers; the on-the-wire shapes
+#   below are the canonical contract the frontend builds its zod schemas and
+#   typed client against.
+#
+# Related: .orchestration/contracts/rest-api.md,
+#          .orchestration/contracts/results-schema.md,
+#          .orchestration/contracts/config-schema.md,
+#          apps/api/internal/server/router.go
+# Briefing: .orchestration/briefings/1f-api-skeleton.md
+# Contract: this file IS a contract — bump the version and update
+#           apps/web/lib/api.ts whenever it changes.
+
+openapi: 3.1.0
+
+info:
+  title: radstorm HTTP API
+  version: 0.1.0
+  description: |
+    HTTP surface between the radstorm frontend (apps/web) and the Go API
+    server (apps/api). All endpoints are unauthenticated; the tool runs
+    locally only.
+
+servers:
+  - url: http://localhost:8080
+    description: Local dev
+
+tags:
+  - name: health
+  - name: scenarios
+  - name: runs
+  - name: results
+
+paths:
+  /api/v1/health:
+    get:
+      tags: [health]
+      summary: Health probe
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /api/v1/scenarios/templates:
+    get:
+      tags: [scenarios]
+      summary: List built-in scenario templates
+      operationId: listScenarioTemplates
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Template"
+
+  /api/v1/runs:
+    get:
+      tags: [runs]
+      summary: List runs (most recent first)
+      operationId: listRuns
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1 }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, running, succeeded, failed, cancelling, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [runs]
+                properties:
+                  runs:
+                    type: array
+                    items: { $ref: "#/components/schemas/Run" }
+    post:
+      tags: [runs]
+      summary: Trigger a new run
+      operationId: createRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [config]
+              properties:
+                name: { type: string }
+                config: { $ref: "#/components/schemas/Config" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Another run is already in progress
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/v1/runs/{id}:
+    get:
+      tags: [runs]
+      summary: Get run detail
+      operationId: getRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/v1/runs/{id}/cancel:
+    post:
+      tags: [runs]
+      summary: Cancel a running run (graceful drain)
+      operationId: cancelRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status]
+                properties:
+                  id: { type: string }
+                  status: { type: string, enum: [cancelling] }
+        "404":
+          description: Not found
+        "409":
+          description: Run already finished
+
+  /api/v1/runs/{id}/events:
+    get:
+      tags: [runs]
+      summary: Server-Sent Events stream of progress updates
+      operationId: streamRunEvents
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - name: after
+          in: query
+          schema: { type: integer }
+          description: offset_ms cursor (resume hint)
+      responses:
+        "200":
+          description: SSE stream. Event types: progress, log, complete.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "404":
+          description: Not found
+
+  /api/v1/runs/{id}/results:
+    get:
+      tags: [results]
+      summary: Download the run summary
+      operationId: getRunResults
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+        "404":
+          description: Not found
+
+  /api/v1/runs/{id}/results/establishment-curve:
+    get:
+      tags: [results]
+      summary: Establishment chart time-series
+      operationId: getEstablishmentCurve
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EstablishmentCurve" }
+        "404":
+          description: Not found
+
+  /api/v1/runs/{id}/results/latency-histogram:
+    get:
+      tags: [results]
+      summary: Latency histogram buckets
+      operationId: getLatencyHistogram
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LatencyHistogram" }
+        "404":
+          description: Not found
+
+  /api/v1/runs/{id}/artifacts:
+    get:
+      tags: [results]
+      summary: List downloadable artifacts for a run
+      operationId: listArtifacts
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [artifacts]
+                properties:
+                  artifacts:
+                    type: array
+                    items: { $ref: "#/components/schemas/Artifact" }
+        "404":
+          description: Not found
+
+  /api/v1/runs/{id}/artifacts/{name}:
+    get:
+      tags: [results]
+      summary: Download an artifact file
+      operationId: downloadArtifact
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Artifact bytes (Content-Type varies by file)
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "404":
+          description: Not found
+
+components:
+  parameters:
+    RunId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      example: run-2026-05-02T01-23-45Z-7f3a
+
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { type: string, enum: [ok] }
+        version: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        details:
+          description: Optional list of {field,message} for validation errors.
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    Status:
+      type: string
+      enum: [queued, running, succeeded, failed, cancelling, cancelled]
+
+    Run:
+      type: object
+      required: [id, name, status, created_at, config, progress]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { $ref: "#/components/schemas/Status" }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
+        config: { $ref: "#/components/schemas/Config" }
+        progress: { $ref: "#/components/schemas/Progress" }
+        summary:
+          $ref: "#/components/schemas/Summary"
+          nullable: true
+
+    Progress:
+      type: object
+      properties:
+        elapsed_ms: { type: integer }
+        subscribers_total: { type: integer }
+        subscribers_activated: { type: integer }
+        subscribers_established: { type: integer }
+        subscribers_failed: { type: integer }
+
+    Template:
+      type: object
+      required: [id, name, description, config]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        config: { $ref: "#/components/schemas/Config" }
+
+    # Config — the full canonical schema lives in
+    # .orchestration/contracts/config-schema.md. Reproduced here in OpenAPI
+    # form so the frontend's generated types are complete.
+    Config:
+      type: object
+      required: [target, subscribers, source, nas, scenario]
+      properties:
+        target: { $ref: "#/components/schemas/Target" }
+        coa_listener: { $ref: "#/components/schemas/CoaListener" }
+        subscribers: { $ref: "#/components/schemas/Subscribers" }
+        source: { $ref: "#/components/schemas/Source" }
+        nas: { $ref: "#/components/schemas/NAS" }
+        retransmit: { $ref: "#/components/schemas/Retransmit" }
+        scenario: { $ref: "#/components/schemas/Scenario" }
+        output: { $ref: "#/components/schemas/Output" }
+
+    Target:
+      type: object
+      required: [auth_address, acct_address, shared_secret]
+      properties:
+        auth_address: { type: string, example: "127.0.0.1:1812" }
+        acct_address: { type: string, example: "127.0.0.1:1813" }
+        shared_secret: { type: string }
+
+    CoaListener:
+      type: object
+      properties:
+        bind_address: { type: string, example: "0.0.0.0:3799" }
+        shared_secret: { type: string }
+
+    Subscribers:
+      type: object
+      required: [count, credentials_file]
+      properties:
+        count: { type: integer, minimum: 1, maximum: 1000000 }
+        credentials_file: { type: string }
+        auth_method_pap_pct: { type: integer, minimum: 0, maximum: 100, default: 100 }
+        type_pppoe_pct: { type: integer, minimum: 0, maximum: 100, default: 100 }
+        include_acct_start: { type: boolean, default: true }
+
+    Source:
+      type: object
+      required: [ips, port_range]
+      properties:
+        ips:
+          type: array
+          minItems: 1
+          items: { type: string, format: ipv4 }
+        port_range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: integer }
+
+    NAS:
+      type: object
+      required: [ip_address, identifier]
+      properties:
+        ip_address: { type: string, format: ipv4 }
+        identifier: { type: string }
+        huawei:
+          type: object
+          additionalProperties: { type: string }
+
+    Retransmit:
+      type: object
+      properties:
+        initial_timeout_ms: { type: integer, default: 5000 }
+        max_retries: { type: integer, default: 3 }
+        backoff: { type: string, enum: [exponential, linear, constant], default: exponential }
+        backoff_base_ms: { type: integer, default: 1000 }
+
+    Scenario:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [cold_start, uniform, pessimal, coa_storm] }
+        hard_timeout_sec: { type: integer, default: 300 }
+        cold_start: { $ref: "#/components/schemas/ColdStartCfg" }
+        uniform: { $ref: "#/components/schemas/UniformCfg" }
+        pessimal: { $ref: "#/components/schemas/PessimalCfg" }
+        coa_storm: { $ref: "#/components/schemas/CoaStormCfg" }
+
+    ColdStartCfg:
+      type: object
+      required: [mu_sec, sigma_sec, truncate_sigma]
+      properties:
+        mu_sec: { type: number }
+        sigma_sec: { type: number }
+        truncate_sigma: { type: number }
+
+    UniformCfg:
+      type: object
+      required: [duration_sec]
+      properties:
+        duration_sec: { type: number }
+
+    PessimalCfg:
+      type: object
+      properties:
+        burst_window_ms: { type: integer }
+
+    CoaStormCfg:
+      type: object
+      additionalProperties: false
+
+    Output:
+      type: object
+      required: [directory]
+      properties:
+        directory: { type: string, default: "results" }
+        flush_interval_sec: { type: integer, default: 30 }
+
+    Summary:
+      type: object
+      description: |
+        Full results blob. Canonical shape is defined in
+        .orchestration/contracts/results-schema.md.
+      additionalProperties: true
+
+    EstablishmentCurve:
+      type: object
+      required: [interval_ms, points]
+      properties:
+        interval_ms: { type: integer }
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              offset_ms: { type: integer }
+              activated: { type: integer }
+              established: { type: integer }
+              in_flight: { type: integer }
+
+    LatencyHistogram:
+      type: object
+      required: [buckets]
+      properties:
+        buckets:
+          type: array
+          items:
+            type: object
+            properties:
+              le_ms: { type: integer }
+              count: { type: integer }
+
+    Artifact:
+      type: object
+      required: [name, size, url]
+      properties:
+        name: { type: string }
+        size: { type: integer }
+        url: { type: string, format: uri-reference }
