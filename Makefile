@@ -45,7 +45,7 @@ dev: ## Start API + frontend dev servers
 
 docker-up: ## Bring up Docker FreeRADIUS test rig
 	docker compose -f test/docker/docker-compose.yml up -d
-	@echo "FreeRADIUS up. Auth on udp/1812, Acct on udp/1813. Shared secret: testing123"
+	@echo "FreeRADIUS up. Auth on udp/11812, Acct on udp/11813. Shared secret: testing123"
 
 docker-down: ## Tear down Docker test rig
 	docker compose -f test/docker/docker-compose.yml down -v
