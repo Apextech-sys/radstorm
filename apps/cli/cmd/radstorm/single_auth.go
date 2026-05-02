@@ -21,9 +21,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/io"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 func newSingleAuthCmd() *cobra.Command {

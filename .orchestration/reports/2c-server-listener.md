@@ -50,7 +50,7 @@ Every file carries the mandated header block per `docs/CONVENTIONS.md`.
 ```
 go test ./pkg/server/... -cover -v
 === 26 tests, all PASS ===
-ok  github.com/Apextech-sys/reflex-radstorm/pkg/server  0.840s  coverage: 80.3% of statements
+ok  github.com/Apextech-sys/radstorm/pkg/server  0.840s  coverage: 80.3% of statements
 ```
 
 `go build ./...` is clean. `go vet ./pkg/server/...` is clean.

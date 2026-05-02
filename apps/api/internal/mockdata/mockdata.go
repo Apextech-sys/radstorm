@@ -21,7 +21,7 @@
 // frozen REST/results contracts.
 package mockdata
 
-import "github.com/Apextech-sys/reflex-radstorm/pkg/config"
+import "github.com/Apextech-sys/radstorm/pkg/config"
 
 // Template describes a single built-in scenario template returned by
 // GET /api/v1/scenarios/templates.

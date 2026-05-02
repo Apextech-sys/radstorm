@@ -32,7 +32,7 @@ One Git repository. One `go.mod` at the repository root covering all Go code. `a
 
 ```
 /
-  go.mod                      ← single Go module (github.com/Apextech-sys/reflex-radstorm)
+  go.mod                      ← single Go module (github.com/Apextech-sys/radstorm)
   go.sum
   Makefile                    ← coordinates both build systems
   apps/

@@ -45,13 +45,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/collector"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/server"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/subscriber"
+	"github.com/Apextech-sys/radstorm/pkg/collector"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/io"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/server"
+	"github.com/Apextech-sys/radstorm/pkg/subscriber"
 )
 
 // Opts is the public Runner configuration.

@@ -104,9 +104,9 @@ export PATH=$PATH:/usr/local/go/bin
 Once GitHub Releases are published, download the pre-built Linux amd64 binary:
 
 ```bash
-# Check https://github.com/Apextech-sys/reflex-radstorm/releases for the latest version
+# Check https://github.com/Apextech-sys/radstorm/releases for the latest version
 VERSION=v0.1.0
-curl -L https://github.com/Apextech-sys/reflex-radstorm/releases/download/${VERSION}/radstorm-linux-amd64.tar.gz \
+curl -L https://github.com/Apextech-sys/radstorm/releases/download/${VERSION}/radstorm-linux-amd64.tar.gz \
   -o /tmp/radstorm.tar.gz
 tar -xzf /tmp/radstorm.tar.gz -C /tmp/
 sudo install -m 755 /tmp/radstorm /usr/local/bin/radstorm
@@ -121,8 +121,8 @@ The binaries are statically linked — no runtime dependencies. Copy them anywhe
 ### From source (if releases are not yet published)
 
 ```bash
-git clone https://github.com/Apextech-sys/reflex-radstorm.git
-cd reflex-radstorm
+git clone https://github.com/Apextech-sys/radstorm.git
+cd radstorm
 make build
 
 # Copy to production path
@@ -373,7 +373,7 @@ sudo chown radstorm:radstorm /opt/radstorm/data
 sudo tee /etc/systemd/system/radstorm-api.service <<'EOF'
 [Unit]
 Description=radstorm HTTP API server
-Documentation=https://github.com/Apextech-sys/reflex-radstorm
+Documentation=https://github.com/Apextech-sys/radstorm
 After=network.target
 Wants=network.target
 
@@ -492,7 +492,7 @@ Upgrades are a binary swap. No database migration is required between minor vers
 
 ```bash
 # 1. Download the new binary
-curl -L https://github.com/Apextech-sys/reflex-radstorm/releases/download/v0.2.0/radstorm-linux-amd64.tar.gz \
+curl -L https://github.com/Apextech-sys/radstorm/releases/download/v0.2.0/radstorm-linux-amd64.tar.gz \
   -o /tmp/radstorm-new.tar.gz
 tar -xzf /tmp/radstorm-new.tar.gz -C /tmp/
 

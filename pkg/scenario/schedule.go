@@ -33,7 +33,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 // Schedule is the per-subscriber activation timeline.

@@ -16,8 +16,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 func mkUDPAddr(ip string, port int) *net.UDPAddr {

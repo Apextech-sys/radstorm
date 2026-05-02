@@ -36,8 +36,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // runSend implements the retransmit lifecycle described above.

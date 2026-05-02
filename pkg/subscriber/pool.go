@@ -24,8 +24,8 @@ package subscriber
 import (
 	"sync"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // SubscriberTarget is the duck-typed contract that the server listener

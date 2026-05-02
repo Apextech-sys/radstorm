@@ -233,12 +233,12 @@ jobs:
             echo ""
             echo '**Linux/macOS (one-liner):**'
             echo '```bash'
-            echo 'curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash'
+            echo 'curl -fsSL https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash'
             echo '```'
             echo ""
             echo "**Manual:** Download the binary for your platform below and verify with \`SHA256SUMS\`."
             echo ""
-            echo "**Documentation:** See [docs/INSTALLATION.md](https://github.com/Apextech-sys/reflex-radstorm/blob/main/docs/INSTALLATION.md)"
+            echo "**Documentation:** See [docs/INSTALLATION.md](https://github.com/Apextech-sys/radstorm/blob/main/docs/INSTALLATION.md)"
             echo ""
             echo "### Supported platforms"
             echo ""

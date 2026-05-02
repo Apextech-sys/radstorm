@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/collector"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/collector"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/io"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // fakeEngine is an EngineAPI that always returns Access-Accept (and

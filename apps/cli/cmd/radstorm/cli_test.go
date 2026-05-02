@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/collector"
+	"github.com/Apextech-sys/radstorm/pkg/collector"
 )
 
 func TestRoot_ShowsHelp(t *testing.T) {

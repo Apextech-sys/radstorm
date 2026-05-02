@@ -38,9 +38,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata"
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/mockdata"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 // silentLogger discards everything; tests don't care about log output.

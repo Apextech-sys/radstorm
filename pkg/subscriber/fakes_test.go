@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // fakeAddr is a simple net.Addr used in fake send results.

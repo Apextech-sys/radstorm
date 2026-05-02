@@ -20,7 +20,7 @@
 package subscriber
 
 import (
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // LookupFunc is the closure type returned by BuildLookup. The server

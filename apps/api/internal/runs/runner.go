@@ -38,7 +38,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 // Runner spawns the CLI subprocess for each run and watches its output.

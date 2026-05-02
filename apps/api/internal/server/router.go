@@ -27,9 +27,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/handlers"
-	mw "github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/middleware"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/server/handlers"
+	mw "github.com/Apextech-sys/radstorm/apps/api/internal/server/middleware"
 )
 
 // RouterDeps holds dependencies required to build the production router.

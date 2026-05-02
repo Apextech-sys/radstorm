@@ -39,7 +39,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
 )
 
 // HeartbeatInterval is the cadence for SSE keep-alive pings. 15s is the

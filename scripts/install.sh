@@ -9,7 +9,7 @@
 #   Prints next-step instructions on success.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash
 #   Or with a specific version:
 #   RADSTORM_VERSION=v0.1.0 bash scripts/install.sh
 #
@@ -31,7 +31,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-REPO="Apextech-sys/reflex-radstorm"
+REPO="Apextech-sys/radstorm"
 GITHUB_API="https://api.github.com/repos/${REPO}/releases/latest"
 GITHUB_RELEASES="https://github.com/${REPO}/releases/download"
 QUICKSTART_URL="https://github.com/${REPO}/blob/main/docs/QUICKSTART.md"

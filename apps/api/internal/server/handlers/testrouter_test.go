@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
 )
 
 // newTestRouter returns a chi router with the same routes as the production

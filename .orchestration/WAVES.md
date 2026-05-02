@@ -15,7 +15,7 @@ Status legend: `pending` | `in-progress` | `blocked` | `done` | `failed`
 | Task | Status | Notes |
 |---|---|---|
 | 0.1 Verify gh auth | done | `Apextech-sys` |
-| 0.2 Create private repo | done | https://github.com/Apextech-sys/reflex-radstorm |
+| 0.2 Create private repo | done | https://github.com/Apextech-sys/radstorm |
 | 0.3 Init local git + structure | done | |
 | 0.4 Write orchestration files | in-progress | STATE.md + WAVES.md + contracts skeleton |
 | 0.5 Write canonical docs | pending | ARCHITECTURE, PROTOCOL, CONFIG, CONVENTIONS |

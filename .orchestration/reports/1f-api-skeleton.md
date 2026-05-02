@@ -68,7 +68,7 @@ All shapes match the JSON in `.orchestration/contracts/rest-api.md` and
 
 ## Coordination notes for the orchestrator
 
-- **Wave 1B (`pkg/config`):** I depended on `apps/api/internal/config/config_stub.go` — a minimal struct-only mirror of the canonical config schema. **Action on merge:** delete `apps/api/internal/config/` and switch the three handlers + the runs store to import the real `github.com/Apextech-sys/reflex-radstorm/pkg/config`. The exported names (`Config`, `Validate`, `ValidationError`) match the names I used, so the diff is mostly the import path. Validation in the stub is a minimal "required fields present" check; the real package's stricter validator will simply tighten the 400 envelope.
+- **Wave 1B (`pkg/config`):** I depended on `apps/api/internal/config/config_stub.go` — a minimal struct-only mirror of the canonical config schema. **Action on merge:** delete `apps/api/internal/config/` and switch the three handlers + the runs store to import the real `github.com/Apextech-sys/radstorm/pkg/config`. The exported names (`Config`, `Validate`, `ValidationError`) match the names I used, so the diff is mostly the import path. Validation in the stub is a minimal "required fields present" check; the real package's stricter validator will simply tighten the 400 envelope.
 - **Wave 3 (real API):** `runs.Store` is an interface — the in-memory impl is replaced by SQLite without touching handlers. The `progressFakeRun` goroutine in `runs.go` and the SSE step loop in `events.go` are the two places to delete when wiring the real CLI subprocess + `progress.jsonl` tailer.
 
 ## Verification
@@ -78,10 +78,10 @@ $ go build ./apps/api/...
 ok
 
 $ go test ./apps/api/... -cover
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs                94.8%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server              86.0%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/handlers     82.6%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/middleware   86.8%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/runs                94.8%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server              86.0%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server/handlers     82.6%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server/middleware   86.8%
 ```
 
 Coverage exceeds the 70% bar set in the briefing on every package.

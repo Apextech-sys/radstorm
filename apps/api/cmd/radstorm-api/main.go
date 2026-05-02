@@ -35,8 +35,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/server"
 )
 
 // Environment variable names recognised by the server.

@@ -2,7 +2,7 @@
 
 **Status: complete and operational.**
 **Date: 2026-05-02 (overnight build, started ~00:50 GMT+2, finished ~09:50 GMT+2).**
-**Repo: https://github.com/Apextech-sys/reflex-radstorm (private).**
+**Repo: https://github.com/Apextech-sys/radstorm (private).**
 
 ---
 

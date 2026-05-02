@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/events"
 	"github.com/parquet-go/parquet-go"
 )
 

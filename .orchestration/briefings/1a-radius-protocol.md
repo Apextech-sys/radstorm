@@ -16,7 +16,7 @@ Build the `pkg/radius` Go package that owns RADIUS packet encoding/decoding for 
 
 - **Worktree:** `C:\dev\radstorm` directly on `main` for this slice (no parallel writers to `pkg/radius/` in Wave 1)
 - **Files you own:**
-  - `go.mod`, `go.sum` (initialize the module as `github.com/Apextech-sys/reflex-radstorm`)
+  - `go.mod`, `go.sum` (initialize the module as `github.com/Apextech-sys/radstorm`)
   - `pkg/radius/*.go` — packet types, encode/decode, attribute helpers, secret/authenticator math
   - `pkg/radius/dictionaries/*.dict` — RFC standard + Huawei dictionary (vendor 2011)
   - `pkg/radius/dictionary.go` — embedded dictionary loader using `//go:embed`
@@ -26,7 +26,7 @@ Build the `pkg/radius` Go package that owns RADIUS packet encoding/decoding for 
 ## Scope
 
 **In scope:**
-- Initialize Go module: `go mod init github.com/Apextech-sys/reflex-radstorm`
+- Initialize Go module: `go mod init github.com/Apextech-sys/radstorm`
 - Use Go 1.22+ features
 - Add `layeh.com/radius` as a dependency (battle-tested RADIUS library)
 - Compile in standard RFC dictionary + Huawei dictionary (vendor 2011) using `layeh.com/radius/dictionarygen` OR by writing minimal hand-rolled attribute helpers if the generator is too heavy. Prefer the generator.

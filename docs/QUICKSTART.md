@@ -9,8 +9,8 @@ Get from zero to a completed RADIUS stress test in five minutes. Assumes Docker 
 ## Step 1 — Clone and build
 
 ```bash
-git clone https://github.com/Apextech-sys/reflex-radstorm.git
-cd reflex-radstorm
+git clone https://github.com/Apextech-sys/radstorm.git
+cd radstorm
 
 # Build the CLI and API binaries
 make build

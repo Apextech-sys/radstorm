@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/events"
 	"github.com/parquet-go/parquet-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -9,7 +9,7 @@
 #   success.
 #
 # Usage:
-#   iwr -useb https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.ps1 | iex
+#   iwr -useb https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.ps1 | iex
 #   Or with a specific version:
 #   $env:RADSTORM_VERSION = "v0.1.0"; .\scripts\install.ps1
 #
@@ -41,7 +41,7 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-$Repo            = "Apextech-sys/reflex-radstorm"
+$Repo            = "Apextech-sys/radstorm"
 $GithubApi       = "https://api.github.com/repos/$Repo/releases/latest"
 $GithubReleases  = "https://github.com/$Repo/releases/download"
 $QuickstartUrl   = "https://github.com/$Repo/blob/main/docs/QUICKSTART.md"

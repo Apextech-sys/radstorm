@@ -36,8 +36,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // Backoff specifies the retransmit backoff curve.

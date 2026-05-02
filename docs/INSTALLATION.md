@@ -11,7 +11,7 @@ This page covers all installation paths for `radstorm` and `radstorm-api`.
 The fastest path for network engineers on Linux or macOS.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash
 ```
 
 What the script does:
@@ -26,14 +26,14 @@ To install a specific version:
 
 ```bash
 RADSTORM_VERSION=v0.1.0 curl -fsSL \
-  https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+  https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash
 ```
 
 To install to a custom directory:
 
 ```bash
 RADSTORM_INSTALL_DIR=/opt/radstorm/bin curl -fsSL \
-  https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+  https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash
 ```
 
 ---
@@ -41,7 +41,7 @@ RADSTORM_INSTALL_DIR=/opt/radstorm/bin curl -fsSL \
 ## Option B: One-liner install script (Windows PowerShell)
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.ps1 | iex
 ```
 
 Or run the script directly from a cloned repo:
@@ -63,7 +63,7 @@ Binaries are placed in `%LOCALAPPDATA%\radstorm\bin\`. The installer adds this d
 
 ## Option C: Manual download from GitHub Releases
 
-1. Go to [https://github.com/Apextech-sys/reflex-radstorm/releases](https://github.com/Apextech-sys/reflex-radstorm/releases)
+1. Go to [https://github.com/Apextech-sys/radstorm/releases](https://github.com/Apextech-sys/radstorm/releases)
 2. Download the binaries for your platform:
 
 | File | Platform |
@@ -108,8 +108,8 @@ sudo mv radstorm-linux-amd64 /usr/local/bin/radstorm
 Requires Go 1.22+ (tested on 1.26.2) and Git.
 
 ```bash
-git clone https://github.com/Apextech-sys/reflex-radstorm.git
-cd reflex-radstorm
+git clone https://github.com/Apextech-sys/radstorm.git
+cd radstorm
 make build
 # Binaries land in bin/radstorm and bin/radstorm-api
 ```

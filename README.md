@@ -1,10 +1,17 @@
 # radstorm
 
-[![CI](https://github.com/Apextech-sys/reflex-radstorm/actions/workflows/ci.yml/badge.svg)](https://github.com/Apextech-sys/reflex-radstorm/actions/workflows/ci.yml)
+[![CI](https://github.com/Apextech-sys/radstorm/actions/workflows/ci.yml/badge.svg)](https://github.com/Apextech-sys/radstorm/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-radstorm is a protocol-level RADIUS stress tester for ISP-scale subscriber environments. It simulates up to 1M virtual PPPoE/MAC subscribers, drives full authentication and accounting flows against a target RADIUS server, and produces sharded Parquet event logs plus a structured `summary.json` for analysis.
+**A protocol-level RADIUS stress tester for ISPs.** Simulates up to 1 million virtual PPPoE / MAC-auth subscribers from a single host, drives full Access-Request → Accept → Accounting flows against any standards-compliant RADIUS server, and answers the question every ISP CTO actually cares about: *will this server survive a 1M-device auth storm after a regional outage, or will it cascade-fail?*
 
-Validated end-to-end: 100 subscribers in under 6 seconds against Dockerized FreeRADIUS, with p50=10ms and p99=35ms establishment latency, sharded Parquet output, and a live frontend dashboard.
+Built to evaluate carrier-grade RADIUS solutions (FreeRADIUS, Interstellar, Radiator, custom) on neutral ground with reproducible measurements, not vendor-supplied benchmarks. Output is Parquet + structured JSON for direct ingestion into your analytics pipeline.
+
+**For network engineers evaluating a vendor:** start with [docs/EVALUATION-GUIDE.md](docs/EVALUATION-GUIDE.md).
+
+> **Responsible use.** radstorm is a load-testing tool. Pointing it at a RADIUS server you don't own or have explicit authorisation to test is unauthorised access in most jurisdictions. The tool produces measurements; it does not endorse vendors. A `succeeded` outcome is a measurement against your test conditions, not a performance guarantee.
+
+**Verification status:** end-to-end test suite passes consistently at 100 subscribers against Dockerized FreeRADIUS (p50 10ms, p99 35ms establishment latency, all 100/100 established in under 10s). Architecture supports the 1M target on dedicated hardware; scale validation at that target is the operator's responsibility — see [docs/EVALUATION-GUIDE.md](docs/EVALUATION-GUIDE.md).
 
 ---
 
@@ -13,16 +20,16 @@ Validated end-to-end: 100 subscribers in under 6 seconds against Dockerized Free
 **One-liner (Linux/macOS):**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Apextech-sys/radstorm/main/scripts/install.ps1 | iex
 ```
 
-**Manual:** Download from [Releases](https://github.com/Apextech-sys/reflex-radstorm/releases) — pre-built binaries for Linux, macOS, and Windows. Verify with the included `SHA256SUMS` file.
+**Manual:** Download from [Releases](https://github.com/Apextech-sys/radstorm/releases) — pre-built binaries for Linux, macOS, and Windows. Verify with the included `SHA256SUMS` file.
 
 **Build from source:** see [QUICKSTART](docs/QUICKSTART.md).
 
@@ -85,8 +92,8 @@ The CLI is the test engine. The API server is a thin process supervisor. The fro
 
 ```bash
 # Clone and build
-git clone https://github.com/Apextech-sys/reflex-radstorm.git
-cd reflex-radstorm
+git clone https://github.com/Apextech-sys/radstorm.git
+cd radstorm
 make build
 
 # Start the Docker FreeRADIUS rig

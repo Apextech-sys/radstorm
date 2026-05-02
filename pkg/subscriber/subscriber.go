@@ -38,10 +38,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/io"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/io"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // Sender is the I/O surface the FSM consumes. Re-exported alias for

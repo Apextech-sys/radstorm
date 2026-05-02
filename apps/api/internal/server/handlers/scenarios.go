@@ -18,7 +18,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/mockdata"
 )
 
 // Templates handles GET /api/v1/scenarios/templates.

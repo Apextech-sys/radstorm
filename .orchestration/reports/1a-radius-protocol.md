@@ -80,7 +80,7 @@ pkg/radius/
 ## Test results
 
 ```
-ok  github.com/Apextech-sys/reflex-radstorm/pkg/radius   1.96s   coverage: 85.7% of statements
+ok  github.com/Apextech-sys/radstorm/pkg/radius   1.96s   coverage: 85.7% of statements
 ```
 
 - 35 top-level test functions (≈48 cases including table-driven subtests). All pass.

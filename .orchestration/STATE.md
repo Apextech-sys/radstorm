@@ -34,7 +34,7 @@ Post-merge integration:
 | Decision | Value | Source |
 |---|---|---|
 | GitHub account | `Apextech-sys` (private repo) | User |
-| Repo URL | https://github.com/Apextech-sys/reflex-radstorm | Created Wave 0 |
+| Repo URL | https://github.com/Apextech-sys/radstorm | Created Wave 0 |
 | Frontend stack | Next.js + shadcn/ui | User |
 | Architecture | Frontend → REST → Go API server → Go CLI/library | User |
 | Local E2E target | Docker FreeRADIUS, scale that fits a laptop (≤10k subs) | User |

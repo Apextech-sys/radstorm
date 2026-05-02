@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 func minimalConfig() *config.Config {

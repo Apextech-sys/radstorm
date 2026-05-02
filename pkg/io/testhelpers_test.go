@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // echoMode controls how the test server responds.

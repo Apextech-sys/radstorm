@@ -33,7 +33,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/events"
 )
 
 // Opts configures a Collector. Zero values are replaced with sane

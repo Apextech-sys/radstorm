@@ -33,8 +33,8 @@ Every file carries the mandated header block per `docs/CONVENTIONS.md`.
 
 ```
 go test ./pkg/events/... ./pkg/collector/... -v -cover -race
-ok  github.com/Apextech-sys/reflex-radstorm/pkg/events     1.089s  coverage: 100.0% of statements
-ok  github.com/Apextech-sys/reflex-radstorm/pkg/collector 50.408s  coverage:  86.6% of statements
+ok  github.com/Apextech-sys/radstorm/pkg/events     1.089s  coverage: 100.0% of statements
+ok  github.com/Apextech-sys/radstorm/pkg/collector 50.408s  coverage:  86.6% of statements
 ```
 
 `go build ./...` and `go vet ./...` are both clean.

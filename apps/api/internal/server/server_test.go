@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
 )
 
 func quietLogger() *slog.Logger {

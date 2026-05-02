@@ -50,4 +50,4 @@
 
 3. **Interstellar-specific VSAs:** If Interstellar uses VSA dictionaries beyond Huawei vendor 2011, those would need to be added to `pkg/radius/dictionaries/` and the CUSTOM-SCENARIOS.md Huawei section would need extension. The current codebase has only the Huawei dictionary.
 
-4. **GitHub Releases URL:** PRODUCTION-DEPLOYMENT.md points to `https://github.com/Apextech-sys/reflex-radstorm/releases` which does not yet have published releases. The section notes this and provides the build-from-source fallback.
+4. **GitHub Releases URL:** PRODUCTION-DEPLOYMENT.md points to `https://github.com/Apextech-sys/radstorm/releases` which does not yet have published releases. The section notes this and provides the build-from-source fallback.

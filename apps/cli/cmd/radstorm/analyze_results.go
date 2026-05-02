@@ -18,7 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/collector"
+	"github.com/Apextech-sys/radstorm/pkg/collector"
 )
 
 func newAnalyzeResultsCmd() *cobra.Command {

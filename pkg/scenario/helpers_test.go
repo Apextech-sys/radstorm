@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/subscriber"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/subscriber"
 )
 
 // osStatProgress returns the byte size of the file at path, or an error.

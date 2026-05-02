@@ -36,12 +36,12 @@
 ## Test results
 
 ```
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/cmd/radstorm-api          [no test files]
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/mockdata         [no test files]
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs             coverage: 87.9%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server           coverage: 86.0%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/handlers  coverage: 71.0%
-ok  github.com/Apextech-sys/reflex-radstorm/apps/api/internal/server/middleware coverage: 86.8%
+ok  github.com/Apextech-sys/radstorm/apps/api/cmd/radstorm-api          [no test files]
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/mockdata         [no test files]
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/runs             coverage: 87.9%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server           coverage: 86.0%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server/handlers  coverage: 71.0%
+ok  github.com/Apextech-sys/radstorm/apps/api/internal/server/middleware coverage: 86.8%
 ```
 
 `runs` package coverage **87.9%** vs. the briefing's **≥75%** target.

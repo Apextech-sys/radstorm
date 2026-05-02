@@ -1,4 +1,4 @@
-module github.com/Apextech-sys/reflex-radstorm
+module github.com/Apextech-sys/radstorm
 
 go 1.26.2
 

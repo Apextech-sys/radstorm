@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/events"
 )
 
 // shardAggregation is the per-shard counter set updated as events stream

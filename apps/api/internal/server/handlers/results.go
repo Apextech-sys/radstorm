@@ -35,7 +35,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Apextech-sys/reflex-radstorm/apps/api/internal/runs"
+	"github.com/Apextech-sys/radstorm/apps/api/internal/runs"
 )
 
 // ResultsHandler bundles dependencies for the results endpoints.

@@ -33,7 +33,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 // schemaSQL is applied at NewSQLiteStore. CREATE TABLE IF NOT EXISTS keeps

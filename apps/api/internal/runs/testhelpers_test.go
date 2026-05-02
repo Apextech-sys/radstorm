@@ -23,7 +23,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/config"
 )
 
 var (

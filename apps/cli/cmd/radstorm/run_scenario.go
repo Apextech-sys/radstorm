@@ -28,9 +28,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/collector"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/config"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/scenario"
+	"github.com/Apextech-sys/radstorm/pkg/collector"
+	"github.com/Apextech-sys/radstorm/pkg/config"
+	"github.com/Apextech-sys/radstorm/pkg/scenario"
 )
 
 func newRunScenarioCmd() *cobra.Command {

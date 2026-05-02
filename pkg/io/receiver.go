@@ -30,8 +30,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/Apextech-sys/reflex-radstorm/pkg/events"
-	"github.com/Apextech-sys/reflex-radstorm/pkg/radius"
+	"github.com/Apextech-sys/radstorm/pkg/events"
+	"github.com/Apextech-sys/radstorm/pkg/radius"
 )
 
 // Receiver reads inbound datagrams off every socket in the pool.
