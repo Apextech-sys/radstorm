@@ -94,7 +94,15 @@ assert_jq_ne  "${SUMMARY}" '.finished_at'                        "null"      "fi
 echo ""
 echo "Asserting artifact files..."
 
-assert_file_exists "${OUT_DIR}/events.parquet"      "events.parquet exists and non-empty"
+# Collector writes one Parquet per shard (events-shard-N-M.parquet).
+SHARDS=$(ls -1 "${OUT_DIR}"/events-shard-*.parquet 2>/dev/null | wc -l)
+if [ "${SHARDS}" -gt 0 ]; then
+  echo "${GREEN}[PASS]${RESET} events parquet shards present: ${SHARDS} files"
+  (( ASSERT_PASS++ )) || true
+else
+  echo "${RED}[FAIL]${RESET} no events-shard-*.parquet files in ${OUT_DIR}"
+  (( ASSERT_FAIL++ )) || true
+fi
 assert_file_exists "${OUT_DIR}/subscribers.parquet" "subscribers.parquet exists and non-empty"
 
 # Optional: assert row count using parquet-row-count binary
