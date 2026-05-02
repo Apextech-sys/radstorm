@@ -202,4 +202,6 @@ The header convention exists so any contributor — human or agent — can under
 
 ## License
 
-Proprietary — internal use only.
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Copyright 2026 Apextech (Pty) Ltd.
