@@ -1,0 +1,45 @@
+# Mirror of the example in docs/CONFIG.md, with a credentials path that
+# resolves relative to the pkg/config working directory used by `go test`.
+
+[target]
+auth_address  = "127.0.0.1:1812"
+acct_address  = "127.0.0.1:1813"
+shared_secret = "testing123"
+
+[coa_listener]
+bind_address  = "0.0.0.0:3799"
+shared_secret = "testing123"
+
+[subscribers]
+count                = 3
+credentials_file     = "testdata/credentials/minimal.csv"
+auth_method_pap_pct  = 80
+type_pppoe_pct       = 90
+include_acct_start   = true
+
+[source]
+ips        = ["127.0.0.1"]
+port_range = [10000, 60000]
+
+[nas]
+ip_address = "10.0.0.1"
+identifier = "radstorm-test-nas"
+
+[retransmit]
+initial_timeout_ms = 5000
+max_retries        = 3
+backoff            = "exponential"
+backoff_base_ms    = 1000
+
+[scenario]
+type = "cold_start"
+hard_timeout_sec = 300
+
+[scenario.cold_start]
+mu_sec    = 20.0
+sigma_sec = 8.0
+truncate_sigma = 3.0
+
+[output]
+directory = "results/"
+flush_interval_sec = 30
