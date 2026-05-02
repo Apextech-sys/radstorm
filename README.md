@@ -8,6 +8,28 @@ Validated end-to-end: 100 subscribers in under 6 seconds against Dockerized Free
 
 ---
 
+## Install
+
+**One-liner (Linux/macOS):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/Apextech-sys/reflex-radstorm/main/scripts/install.ps1 | iex
+```
+
+**Manual:** Download from [Releases](https://github.com/Apextech-sys/reflex-radstorm/releases) — pre-built binaries for Linux, macOS, and Windows. Verify with the included `SHA256SUMS` file.
+
+**Build from source:** see [QUICKSTART](docs/QUICKSTART.md).
+
+**Full install documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
+
+---
+
 ## First-time user
 
 **[Start here: docs/QUICKSTART.md](docs/QUICKSTART.md)**

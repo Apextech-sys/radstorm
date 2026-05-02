@@ -111,6 +111,7 @@ func main() {
 	defer cancel()
 
 	logger.Info("radstorm_api_starting",
+		slog.String("version", Version),
 		slog.String("addr", addr),
 		slog.String("data_dir", dataDir),
 		slog.String("db_path", dbPath),

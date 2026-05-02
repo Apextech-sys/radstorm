@@ -1,18 +1,37 @@
 # radstorm Makefile
 # Briefing: orchestrator-managed; minimal targets for build/test/dev
+# Wave 6: added build-all, build-cross, checksums, release-local targets
 
-.PHONY: help build build-cli build-api test test-go test-web lint dev clean docker-up docker-down e2e
+.PHONY: help build build-all build-cli build-api build-cross checksums release-local \
+        test test-go test-web lint dev clean docker-up docker-down e2e check-headers
 
 GO         := go
 GOFLAGS    :=
 BINDIR     := bin
+DISTDIR    := dist
 CLI_OUT    := $(BINDIR)/radstorm
 API_OUT    := $(BINDIR)/radstorm-api
+
+# Version string: use git describe if available, else "dev"
+VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+
+# Release ldflags: strip debug info + embed version
+RELEASE_LDFLAGS := -s -w -X main.Version=$(VERSION)
+
+# Cross-compilation targets: GOOS/GOARCH/suffix triples
+PLATFORMS := \
+  linux/amd64/ \
+  linux/arm64/ \
+  darwin/amd64/ \
+  darwin/arm64/ \
+  windows/amd64/.exe
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-build: build-cli build-api ## Build CLI + API binaries
+build: build-cli build-api ## Build CLI + API binaries for the current OS/arch (alias: build-all)
+
+build-all: build ## Alias for build — build both binaries for current OS/arch
 
 build-cli: ## Build the radstorm CLI
 	@mkdir -p $(BINDIR)
@@ -21,6 +40,41 @@ build-cli: ## Build the radstorm CLI
 build-api: ## Build the radstorm API server
 	@mkdir -p $(BINDIR)
 	$(GO) build $(GOFLAGS) -o $(API_OUT) ./apps/api/cmd/radstorm-api
+
+# Cross-compile both binaries for all 5 OS/arch combinations into dist/.
+# Naming: dist/radstorm-{os}-{arch}[.exe]
+build-cross: ## Build for all 5 OS/arch combos into dist/
+	@mkdir -p $(DISTDIR)
+	@echo "Building radstorm $(VERSION) for all platforms..."
+	@for platform in $(PLATFORMS); do \
+	  GOOS=$$(echo $$platform | cut -d/ -f1); \
+	  GOARCH=$$(echo $$platform | cut -d/ -f2); \
+	  SUFFIX=$$(echo $$platform | cut -d/ -f3); \
+	  CLI_DEST=$(DISTDIR)/radstorm-$${GOOS}-$${GOARCH}$${SUFFIX}; \
+	  API_DEST=$(DISTDIR)/radstorm-api-$${GOOS}-$${GOARCH}$${SUFFIX}; \
+	  echo "  -> $${GOOS}/$${GOARCH}"; \
+	  CGO_ENABLED=0 GOOS=$${GOOS} GOARCH=$${GOARCH} \
+	    $(GO) build -ldflags="$(RELEASE_LDFLAGS)" -o $${CLI_DEST} ./apps/cli/cmd/radstorm || exit 1; \
+	  CGO_ENABLED=0 GOOS=$${GOOS} GOARCH=$${GOARCH} \
+	    $(GO) build -ldflags="$(RELEASE_LDFLAGS)" -o $${API_DEST} ./apps/api/cmd/radstorm-api || exit 1; \
+	done
+	@echo "Cross-build complete. Artifacts in $(DISTDIR)/:"
+	@ls -lh $(DISTDIR)/
+
+checksums: ## Generate dist/SHA256SUMS for all binaries in dist/
+	@[ -d "$(DISTDIR)" ] || { echo "Run 'make build-cross' first."; exit 1; }
+	@cd $(DISTDIR) && sha256sum * > SHA256SUMS
+	@echo "Checksums written to $(DISTDIR)/SHA256SUMS:"
+	@cat $(DISTDIR)/SHA256SUMS
+
+release-local: build-cross checksums ## Dry-run release: cross-build + checksums + list dist/
+	@echo ""
+	@echo "=== Local release dry-run complete ==="
+	@echo "Version : $(VERSION)"
+	@echo "Artifacts in $(DISTDIR)/:"
+	@ls -lh $(DISTDIR)/
+	@echo ""
+	@echo "To publish: git tag v<x.y.z> && git push --tags"
 
 test: test-go test-web ## Run all tests
 
